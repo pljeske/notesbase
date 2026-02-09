@@ -82,3 +82,62 @@
   margin: 0.25em 0;
   line-height: 1.75;
 }
+
+.tiptap img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin: 1em 0;
+}
+
+.tiptap .pdf-block {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  background-color: #f9fafb;
+  margin: 0.8em 0;
+  cursor: pointer;
+  transition: background-color 0.15s;
+  text-decoration: none;
+  color: inherit;
+}
+
+.tiptap .pdf-block:hover {
+  background-color: #f3f4f6;
+}
+
+.tiptap .pdf-block .pdf-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #ef4444;
+  color: white;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.tiptap .pdf-block .pdf-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.tiptap .pdf-block .pdf-filename {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #111827;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tiptap .pdf-block .pdf-size {
+  font-size: 0.75rem;
+  color: #6b7280;
+}

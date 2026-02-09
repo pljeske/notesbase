@@ -1,4 +1,6 @@
 import type { Editor, Range } from '@tiptap/core';
+import { uploadFile } from '../../api/upload';
+import { usePageStore } from '../../stores/pageStore';
 
 export interface SlashCommandItem {
   title: string;
@@ -6,6 +8,19 @@ export interface SlashCommandItem {
   icon: string;
   searchTerms: string[];
   command: (props: { editor: Editor; range: Range }) => void;
+}
+
+function pickFile(accept: string): Promise<File | null> {
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = accept;
+    input.onchange = () => {
+      resolve(input.files?.[0] ?? null);
+    };
+    input.addEventListener('cancel', () => resolve(null));
+    input.click();
+  });
 }
 
 export const slashCommands: SlashCommandItem[] = [
@@ -88,6 +103,61 @@ export const slashCommands: SlashCommandItem[] = [
     searchTerms: ['text', 'paragraph', 'plain', 'p'],
     command: ({ editor, range }) => {
       editor.chain().focus().deleteRange(range).setParagraph().run();
+    },
+  },
+  {
+    title: 'Image',
+    description: 'Upload an image',
+    icon: '\uD83D\uDDBC',
+    searchTerms: ['image', 'picture', 'photo', 'img', 'upload'],
+    command: ({ editor, range }) => {
+      editor.chain().focus().deleteRange(range).run();
+
+      const pageId = usePageStore.getState().activePage?.id;
+      if (!pageId) return;
+
+      pickFile('image/jpeg,image/png,image/gif,image/webp,image/svg+xml').then(async (file) => {
+        if (!file) return;
+        try {
+          const result = await uploadFile(file, pageId);
+          editor.chain().focus().setImage({ src: result.url, alt: result.filename }).run();
+        } catch (err) {
+          console.error('Image upload failed:', err);
+        }
+      });
+    },
+  },
+  {
+    title: 'PDF',
+    description: 'Upload a PDF document',
+    icon: '\uD83D\uDCC4',
+    searchTerms: ['pdf', 'document', 'file', 'upload'],
+    command: ({ editor, range }) => {
+      editor.chain().focus().deleteRange(range).run();
+
+      const pageId = usePageStore.getState().activePage?.id;
+      if (!pageId) return;
+
+      pickFile('.pdf,application/pdf').then(async (file) => {
+        if (!file) return;
+        try {
+          const result = await uploadFile(file, pageId);
+          editor
+            .chain()
+            .focus()
+            .insertContent({
+              type: 'pdfBlock',
+              attrs: {
+                src: result.url,
+                filename: result.filename,
+                filesize: result.size,
+              },
+            })
+            .run();
+        } catch (err) {
+          console.error('PDF upload failed:', err);
+        }
+      });
     },
   },
 ];

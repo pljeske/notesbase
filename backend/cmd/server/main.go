@@ -15,6 +15,7 @@ import (
 	"notes-app/backend/internal/middleware"
 	"notes-app/backend/internal/repository"
 	"notes-app/backend/internal/service"
+	"notes-app/backend/internal/storage"
 )
 
 func main() {
@@ -35,11 +36,31 @@ func main() {
 	}
 	log.Println("Migrations completed successfully")
 
+	// S3 Storage
+	s3Client, err := storage.NewS3Client(
+		cfg.MinioEndpoint,
+		cfg.MinioAccessKey,
+		cfg.MinioSecretKey,
+		cfg.MinioBucket,
+		cfg.MinioUseSSL,
+	)
+	if err != nil {
+		log.Fatalf("Failed to create S3 client: %v", err)
+	}
+	if err := s3Client.EnsureBucket(ctx); err != nil {
+		log.Fatalf("Failed to ensure S3 bucket: %v", err)
+	}
+	log.Println("S3 storage ready")
+
 	// Wire up layers
-	repo := repository.NewPostgresPageRepository(pool)
-	svc := service.NewPageService(repo)
-	pageHandler := handler.NewPageHandler(svc)
+	pageRepo := repository.NewPostgresPageRepository(pool)
+	pageSvc := service.NewPageService(pageRepo)
+	pageHandler := handler.NewPageHandler(pageSvc)
 	healthHandler := handler.NewHealthHandler(pool)
+
+	fileRepo := repository.NewPostgresFileRepository(pool)
+	fileSvc := service.NewFileService(fileRepo, s3Client)
+	fileHandler := handler.NewFileHandler(fileSvc, cfg.MaxUploadSize)
 
 	// Router
 	router := gin.Default()
@@ -58,6 +79,10 @@ func main() {
 		api.PUT("/pages/:id", pageHandler.UpdatePage)
 		api.DELETE("/pages/:id", pageHandler.DeletePage)
 		api.PATCH("/pages/:id/move", pageHandler.MovePage)
+
+		api.POST("/upload", fileHandler.Upload)
+		api.GET("/files/:id", fileHandler.GetFile)
+		api.DELETE("/files/:id", fileHandler.DeleteFile)
 	}
 
 	// Start server

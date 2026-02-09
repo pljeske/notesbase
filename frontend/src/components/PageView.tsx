@@ -69,6 +69,7 @@ export function PageView() {
       onUpdate={handleContentUpdate}
       pageTitle={title}
       onTitleChange={handleTitleChange}
+      pageId={pageId!}
     />
   );
 }
