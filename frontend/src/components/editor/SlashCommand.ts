@@ -1,10 +1,10 @@
 import { Extension } from '@tiptap/core';
+import type { Editor, Range } from '@tiptap/core';
 import { ReactRenderer } from '@tiptap/react';
 import Suggestion from '@tiptap/suggestion';
 import tippy, { type Instance } from 'tippy.js';
 import { SlashCommandList } from './SlashCommandList';
 import { slashCommands, type SlashCommandItem } from './slash-commands';
-import type { Editor } from '@tiptap/core';
 
 export const SlashCommand = Extension.create({
   name: 'slashCommand',
@@ -22,6 +22,9 @@ export const SlashCommand = Extension.create({
               item.title.toLowerCase().includes(search) ||
               item.searchTerms.some((term) => term.includes(search))
           );
+        },
+        command: ({ editor, range, props }: { editor: Editor; range: Range; props: SlashCommandItem }) => {
+          props.command({ editor, range });
         },
         render: () => {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
