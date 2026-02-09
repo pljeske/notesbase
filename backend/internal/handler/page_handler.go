@@ -3,10 +3,11 @@ package handler
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"notes-app/backend/internal/model"
 	"notes-app/backend/internal/service"
+
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type PageHandler struct {

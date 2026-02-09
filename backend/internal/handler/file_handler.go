@@ -5,9 +5,10 @@ import (
 	"net/http"
 	"strconv"
 
+	"notes-app/backend/internal/service"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"notes-app/backend/internal/service"
 )
 
 type FileHandler struct {

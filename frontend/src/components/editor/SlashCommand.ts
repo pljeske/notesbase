@@ -1,10 +1,10 @@
-import { Extension } from '@tiptap/core';
-import type { Editor, Range } from '@tiptap/core';
-import { ReactRenderer } from '@tiptap/react';
+import type {Editor, Range} from '@tiptap/core';
+import {Extension} from '@tiptap/core';
+import {ReactRenderer} from '@tiptap/react';
 import Suggestion from '@tiptap/suggestion';
-import tippy, { type Instance } from 'tippy.js';
-import { SlashCommandList } from './SlashCommandList';
-import { slashCommands, type SlashCommandItem } from './slash-commands';
+import tippy, {type Instance} from 'tippy.js';
+import {SlashCommandList} from './SlashCommandList';
+import {type SlashCommandItem, slashCommands} from './slash-commands';
 
 export const SlashCommand = Extension.create({
   name: 'slashCommand',
@@ -14,7 +14,7 @@ export const SlashCommand = Extension.create({
       suggestion: {
         char: '/',
         startOfLine: false,
-        items: ({ query }: { query: string }): SlashCommandItem[] => {
+        items: ({query}: { query: string }): SlashCommandItem[] => {
           const search = query.toLowerCase();
           if (!search) return slashCommands;
           return slashCommands.filter(
@@ -23,8 +23,8 @@ export const SlashCommand = Extension.create({
               item.searchTerms.some((term) => term.includes(search))
           );
         },
-        command: ({ editor, range, props }: { editor: Editor; range: Range; props: SlashCommandItem }) => {
-          props.command({ editor, range });
+        command: ({editor, range, props}: { editor: Editor; range: Range; props: SlashCommandItem }) => {
+          props.command({editor, range});
         },
         render: () => {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any

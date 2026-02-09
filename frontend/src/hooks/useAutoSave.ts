@@ -1,4 +1,4 @@
-import { useCallback, useRef, useEffect } from 'react';
+import {useCallback, useEffect, useRef} from 'react';
 
 export function useAutoSave(
   saveFunction: () => Promise<void>,
@@ -27,5 +27,5 @@ export function useAutoSave(
     };
   }, []);
 
-  return { debouncedSave };
+  return {debouncedSave};
 }

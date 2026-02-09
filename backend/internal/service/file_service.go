@@ -6,10 +6,11 @@ import (
 	"io"
 	"path"
 
-	"github.com/google/uuid"
 	"notes-app/backend/internal/model"
 	"notes-app/backend/internal/repository"
 	"notes-app/backend/internal/storage"
+
+	"github.com/google/uuid"
 )
 
 var allowedTypes = map[string]bool{

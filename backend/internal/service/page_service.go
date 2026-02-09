@@ -4,9 +4,10 @@ import (
 	"context"
 	"sort"
 
-	"github.com/google/uuid"
 	"notes-app/backend/internal/model"
 	"notes-app/backend/internal/repository"
+
+	"github.com/google/uuid"
 )
 
 type PageService struct {

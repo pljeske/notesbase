@@ -1,6 +1,6 @@
-import type { Editor, Range } from '@tiptap/core';
-import { uploadFile } from '../../api/upload';
-import { usePageStore } from '../../stores/pageStore';
+import type {Editor, Range} from '@tiptap/core';
+import {uploadFile} from '../../api/upload';
+import {usePageStore} from '../../stores/pageStore';
 
 export interface SlashCommandItem {
   title: string;
@@ -29,8 +29,8 @@ export const slashCommands: SlashCommandItem[] = [
     description: 'Large section heading',
     icon: 'H1',
     searchTerms: ['h1', 'heading', 'title', 'large'],
-    command: ({ editor, range }) => {
-      editor.chain().focus().deleteRange(range).setNode('heading', { level: 1 }).run();
+    command: ({editor, range}) => {
+      editor.chain().focus().deleteRange(range).setNode('heading', {level: 1}).run();
     },
   },
   {
@@ -38,8 +38,8 @@ export const slashCommands: SlashCommandItem[] = [
     description: 'Medium section heading',
     icon: 'H2',
     searchTerms: ['h2', 'heading', 'subtitle', 'medium'],
-    command: ({ editor, range }) => {
-      editor.chain().focus().deleteRange(range).setNode('heading', { level: 2 }).run();
+    command: ({editor, range}) => {
+      editor.chain().focus().deleteRange(range).setNode('heading', {level: 2}).run();
     },
   },
   {
@@ -47,8 +47,8 @@ export const slashCommands: SlashCommandItem[] = [
     description: 'Small section heading',
     icon: 'H3',
     searchTerms: ['h3', 'heading', 'small'],
-    command: ({ editor, range }) => {
-      editor.chain().focus().deleteRange(range).setNode('heading', { level: 3 }).run();
+    command: ({editor, range}) => {
+      editor.chain().focus().deleteRange(range).setNode('heading', {level: 3}).run();
     },
   },
   {
@@ -56,7 +56,7 @@ export const slashCommands: SlashCommandItem[] = [
     description: 'Unordered list',
     icon: '\u2022',
     searchTerms: ['bullet', 'unordered', 'list', 'ul'],
-    command: ({ editor, range }) => {
+    command: ({editor, range}) => {
       editor.chain().focus().deleteRange(range).toggleBulletList().run();
     },
   },
@@ -65,7 +65,7 @@ export const slashCommands: SlashCommandItem[] = [
     description: 'Ordered list',
     icon: '1.',
     searchTerms: ['numbered', 'ordered', 'list', 'ol'],
-    command: ({ editor, range }) => {
+    command: ({editor, range}) => {
       editor.chain().focus().deleteRange(range).toggleOrderedList().run();
     },
   },
@@ -74,7 +74,7 @@ export const slashCommands: SlashCommandItem[] = [
     description: 'Block quote',
     icon: '\u201C',
     searchTerms: ['quote', 'blockquote'],
-    command: ({ editor, range }) => {
+    command: ({editor, range}) => {
       editor.chain().focus().deleteRange(range).toggleBlockquote().run();
     },
   },
@@ -83,7 +83,7 @@ export const slashCommands: SlashCommandItem[] = [
     description: 'Code with syntax highlighting',
     icon: '</>',
     searchTerms: ['code', 'codeblock', 'pre'],
-    command: ({ editor, range }) => {
+    command: ({editor, range}) => {
       editor.chain().focus().deleteRange(range).toggleCodeBlock().run();
     },
   },
@@ -92,7 +92,7 @@ export const slashCommands: SlashCommandItem[] = [
     description: 'Horizontal rule',
     icon: '---',
     searchTerms: ['divider', 'hr', 'rule', 'separator', 'line'],
-    command: ({ editor, range }) => {
+    command: ({editor, range}) => {
       editor.chain().focus().deleteRange(range).setHorizontalRule().run();
     },
   },
@@ -101,7 +101,7 @@ export const slashCommands: SlashCommandItem[] = [
     description: 'Plain text paragraph',
     icon: 'Aa',
     searchTerms: ['text', 'paragraph', 'plain', 'p'],
-    command: ({ editor, range }) => {
+    command: ({editor, range}) => {
       editor.chain().focus().deleteRange(range).setParagraph().run();
     },
   },
@@ -110,7 +110,7 @@ export const slashCommands: SlashCommandItem[] = [
     description: 'Upload an image',
     icon: '\uD83D\uDDBC',
     searchTerms: ['image', 'picture', 'photo', 'img', 'upload'],
-    command: ({ editor, range }) => {
+    command: ({editor, range}) => {
       editor.chain().focus().deleteRange(range).run();
 
       const pageId = usePageStore.getState().activePage?.id;
@@ -120,7 +120,7 @@ export const slashCommands: SlashCommandItem[] = [
         if (!file) return;
         try {
           const result = await uploadFile(file, pageId);
-          editor.chain().focus().setImage({ src: result.url, alt: result.filename }).run();
+          editor.chain().focus().setImage({src: result.url, alt: result.filename}).run();
         } catch (err) {
           console.error('Image upload failed:', err);
         }
@@ -132,7 +132,7 @@ export const slashCommands: SlashCommandItem[] = [
     description: 'Upload a PDF document',
     icon: '\uD83D\uDCC4',
     searchTerms: ['pdf', 'document', 'file', 'upload'],
-    command: ({ editor, range }) => {
+    command: ({editor, range}) => {
       editor.chain().focus().deleteRange(range).run();
 
       const pageId = usePageStore.getState().activePage?.id;

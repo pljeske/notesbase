@@ -1,5 +1,5 @@
-import { useNavigate } from 'react-router-dom';
-import { usePageStore } from '../stores/pageStore';
+import {useNavigate} from 'react-router-dom';
+import {usePageStore} from '../stores/pageStore';
 
 export function WelcomePage() {
   const navigate = useNavigate();

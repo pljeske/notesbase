@@ -1,8 +1,8 @@
-import { Node, mergeAttributes } from '@tiptap/core';
-import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react';
-import type { ReactNodeViewProps } from '@tiptap/react';
+import {mergeAttributes, Node} from '@tiptap/core';
+import type {ReactNodeViewProps} from '@tiptap/react';
+import {NodeViewWrapper, ReactNodeViewRenderer} from '@tiptap/react';
 
-function PdfBlockView({ node }: ReactNodeViewProps) {
+function PdfBlockView({node}: ReactNodeViewProps) {
   const src = node.attrs.src as string;
   const filename = (node.attrs.filename as string) || 'document.pdf';
   const filesize = (node.attrs.filesize as number) || 0;
@@ -39,9 +39,9 @@ export const PdfBlock = Node.create({
 
   addAttributes() {
     return {
-      src: { default: null },
-      filename: { default: 'document.pdf' },
-      filesize: { default: 0 },
+      src: {default: null},
+      filename: {default: 'document.pdf'},
+      filesize: {default: 0},
     };
   },
 
@@ -53,8 +53,8 @@ export const PdfBlock = Node.create({
     ];
   },
 
-  renderHTML({ HTMLAttributes }) {
-    return ['div', mergeAttributes({ 'data-type': 'pdf-block' }, HTMLAttributes)];
+  renderHTML({HTMLAttributes}) {
+    return ['div', mergeAttributes({'data-type': 'pdf-block'}, HTMLAttributes)];
   },
 
   addNodeView() {

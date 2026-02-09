@@ -1,6 +1,6 @@
-import { create } from 'zustand';
-import { pagesApi } from '../api/pages';
-import type { Page, PageTreeNode, UpdatePageRequest, JSONContent } from '../types/page';
+import {create} from 'zustand';
+import {pagesApi} from '../api/pages';
+import type {JSONContent, Page, PageTreeNode, UpdatePageRequest} from '../types/page';
 
 interface PageState {
   tree: PageTreeNode[];
@@ -27,22 +27,22 @@ export const usePageStore = create<PageState>((set, get) => ({
   saveStatus: 'idle',
 
   fetchTree: async () => {
-    set({ isTreeLoading: true });
+    set({isTreeLoading: true});
     try {
       const tree = await pagesApi.getTree();
-      set({ tree, isTreeLoading: false });
+      set({tree, isTreeLoading: false});
     } catch {
-      set({ isTreeLoading: false });
+      set({isTreeLoading: false});
     }
   },
 
   fetchPage: async (id: string) => {
-    set({ isPageLoading: true });
+    set({isPageLoading: true});
     try {
       const page = await pagesApi.getById(id);
-      set({ activePage: page, isPageLoading: false });
+      set({activePage: page, isPageLoading: false});
     } catch {
-      set({ isPageLoading: false });
+      set({isPageLoading: false});
     }
   },
 
@@ -55,45 +55,45 @@ export const usePageStore = create<PageState>((set, get) => ({
   },
 
   updatePage: async (id: string, data: UpdatePageRequest) => {
-    set({ saveStatus: 'saving' });
+    set({saveStatus: 'saving'});
     try {
       await pagesApi.update(id, data);
-      set({ saveStatus: 'saved' });
+      set({saveStatus: 'saved'});
       // Refresh tree if title changed
       if (data.title !== undefined) {
         await get().fetchTree();
       }
       setTimeout(() => {
         if (get().saveStatus === 'saved') {
-          set({ saveStatus: 'idle' });
+          set({saveStatus: 'idle'});
         }
       }, 2000);
     } catch {
-      set({ saveStatus: 'error' });
+      set({saveStatus: 'error'});
     }
   },
 
   deletePage: async (id: string) => {
     await pagesApi.delete(id);
-    const { activePage } = get();
+    const {activePage} = get();
     if (activePage?.id === id) {
-      set({ activePage: null });
+      set({activePage: null});
     }
     await get().fetchTree();
   },
 
-  setActivePage: (page) => set({ activePage: page }),
+  setActivePage: (page) => set({activePage: page}),
 
-  setSaveStatus: (status) => set({ saveStatus: status }),
+  setSaveStatus: (status) => set({saveStatus: status}),
 
   updateActivePageLocal: (title, content) => {
-    const { activePage } = get();
+    const {activePage} = get();
     if (!activePage) return;
     set({
       activePage: {
         ...activePage,
-        ...(title !== undefined ? { title } : {}),
-        ...(content !== undefined ? { content } : {}),
+        ...(title !== undefined ? {title} : {}),
+        ...(content !== undefined ? {content} : {}),
       },
     });
   },

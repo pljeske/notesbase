@@ -1,11 +1,5 @@
-import { request } from './client';
-import type {
-  Page,
-  PageTreeNode,
-  CreatePageRequest,
-  UpdatePageRequest,
-  MovePageRequest,
-} from '../types/page';
+import {request} from './client';
+import type {CreatePageRequest, MovePageRequest, Page, PageTreeNode, UpdatePageRequest,} from '../types/page';
 
 export const pagesApi = {
   getTree: () => request<PageTreeNode[]>('/api/pages'),
@@ -25,7 +19,7 @@ export const pagesApi = {
     }),
 
   delete: (id: string) =>
-    request<void>(`/api/pages/${id}`, { method: 'DELETE' }),
+    request<void>(`/api/pages/${id}`, {method: 'DELETE'}),
 
   move: (id: string, data: MovePageRequest) =>
     request<void>(`/api/pages/${id}/move`, {

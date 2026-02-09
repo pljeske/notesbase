@@ -1,19 +1,19 @@
-import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { usePageStore } from '../../stores/pageStore';
-import type { PageTreeNode } from '../../types/page';
+import {useState} from 'react';
+import {useNavigate, useParams} from 'react-router-dom';
+import {usePageStore} from '../../stores/pageStore';
+import type {PageTreeNode} from '../../types/page';
 
 interface PageTreeItemProps {
   node: PageTreeNode;
   depth: number;
 }
 
-export function PageTreeItem({ node, depth }: PageTreeItemProps) {
+export function PageTreeItem({node, depth}: PageTreeItemProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [showConfirm, setShowConfirm] = useState(false);
   const navigate = useNavigate();
-  const { pageId } = useParams();
-  const { createPage, deletePage } = usePageStore();
+  const {pageId} = useParams();
+  const {createPage, deletePage} = usePageStore();
   const isActive = pageId === node.id;
 
   const handleCreateSubpage = async (e: React.MouseEvent) => {
@@ -45,7 +45,7 @@ export function PageTreeItem({ node, depth }: PageTreeItemProps) {
             ? 'bg-gray-200 text-gray-900'
             : 'text-gray-600 hover:bg-gray-100'
         }`}
-        style={{ paddingLeft: `${depth * 16 + 8}px`, paddingRight: '8px' }}
+        style={{paddingLeft: `${depth * 16 + 8}px`, paddingRight: '8px'}}
         onClick={() => navigate(`/page/${node.id}`)}
       >
         {node.children.length > 0 ? (
@@ -59,7 +59,7 @@ export function PageTreeItem({ node, depth }: PageTreeItemProps) {
             {isExpanded ? '\u25BE' : '\u25B8'}
           </button>
         ) : (
-          <span className="w-5 h-5 shrink-0" />
+          <span className="w-5 h-5 shrink-0"/>
         )}
         <span className="truncate flex-1">
           {node.icon || '\uD83D\uDCC4'} {node.title || 'Untitled'}
@@ -87,7 +87,7 @@ export function PageTreeItem({ node, depth }: PageTreeItemProps) {
       </div>
       {isExpanded &&
         node.children.map((child) => (
-          <PageTreeItem key={child.id} node={child} depth={depth + 1} />
+          <PageTreeItem key={child.id} node={child} depth={depth + 1}/>
         ))}
     </div>
   );

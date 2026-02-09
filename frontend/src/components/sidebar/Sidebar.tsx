@@ -1,10 +1,10 @@
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { usePageStore } from '../../stores/pageStore';
-import { PageTreeItem } from './PageTreeItem';
+import {useEffect} from 'react';
+import {useNavigate} from 'react-router-dom';
+import {usePageStore} from '../../stores/pageStore';
+import {PageTreeItem} from './PageTreeItem';
 
 export function Sidebar() {
-  const { tree, isTreeLoading, fetchTree, createPage } = usePageStore();
+  const {tree, isTreeLoading, fetchTree, createPage} = usePageStore();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -45,7 +45,7 @@ export function Sidebar() {
           </div>
         ) : (
           tree.map((node) => (
-            <PageTreeItem key={node.id} node={node} depth={0} />
+            <PageTreeItem key={node.id} node={node} depth={0}/>
           ))
         )}
       </nav>

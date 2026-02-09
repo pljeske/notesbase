@@ -1,13 +1,13 @@
-import { Outlet } from 'react-router-dom';
-import { Sidebar } from '../sidebar/Sidebar';
-import { usePageStore } from '../../stores/pageStore';
+import {Outlet} from 'react-router-dom';
+import {Sidebar} from '../sidebar/Sidebar';
+import {usePageStore} from '../../stores/pageStore';
 
 export function AppLayout() {
   const saveStatus = usePageStore((s) => s.saveStatus);
 
   return (
     <div className="flex h-screen bg-white">
-      <Sidebar />
+      <Sidebar/>
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="h-10 flex items-center justify-end px-4 border-b border-gray-100 shrink-0">
           {saveStatus === 'saving' && (
@@ -21,7 +21,7 @@ export function AppLayout() {
           )}
         </header>
         <main className="flex-1 overflow-y-auto">
-          <Outlet />
+          <Outlet/>
         </main>
       </div>
     </div>

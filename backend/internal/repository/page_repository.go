@@ -3,8 +3,9 @@ package repository
 import (
 	"context"
 
-	"github.com/google/uuid"
 	"notes-app/backend/internal/model"
+
+	"github.com/google/uuid"
 )
 
 type PageRepository interface {

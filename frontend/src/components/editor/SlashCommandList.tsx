@@ -1,12 +1,5 @@
-import {
-  forwardRef,
-  useCallback,
-  useEffect,
-  useImperativeHandle,
-  useRef,
-  useState,
-} from 'react';
-import type { SlashCommandItem } from './slash-commands';
+import {forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState,} from 'react';
+import type {SlashCommandItem} from './slash-commands';
 
 interface SlashCommandListProps {
   items: SlashCommandItem[];
@@ -31,7 +24,7 @@ export const SlashCommandList = forwardRef<
     );
     if (!selectedEl) return;
 
-    selectedEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    selectedEl.scrollIntoView({block: 'nearest', behavior: 'smooth'});
   }, [selectedIndex, props.items]);
 
   const selectItem = useCallback(
@@ -43,7 +36,7 @@ export const SlashCommandList = forwardRef<
   );
 
   useImperativeHandle(ref, () => ({
-    onKeyDown: ({ event }: { event: KeyboardEvent }) => {
+    onKeyDown: ({event}: { event: KeyboardEvent }) => {
       if (props.items.length === 0) return false;
 
       if (event.key === 'ArrowUp') {

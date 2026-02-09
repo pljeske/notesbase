@@ -1,13 +1,13 @@
-import { useEffect, useState, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
-import { usePageStore } from '../stores/pageStore';
-import { useAutoSave } from '../hooks/useAutoSave';
-import { Editor } from './editor/Editor';
-import type { JSONContent } from '../types/page';
+import {useCallback, useEffect, useState} from 'react';
+import {useParams} from 'react-router-dom';
+import {usePageStore} from '../stores/pageStore';
+import {useAutoSave} from '../hooks/useAutoSave';
+import {Editor} from './editor/Editor';
+import type {JSONContent} from '../types/page';
 
 export function PageView() {
-  const { pageId } = useParams<{ pageId: string }>();
-  const { activePage, isPageLoading, fetchPage, updatePage } = usePageStore();
+  const {pageId} = useParams<{ pageId: string }>();
+  const {activePage, isPageLoading, fetchPage, updatePage} = usePageStore();
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState<JSONContent | null>(null);
@@ -36,7 +36,7 @@ export function PageView() {
     });
   }, [pageId, title, content, updatePage]);
 
-  const { debouncedSave } = useAutoSave(save, 1000);
+  const {debouncedSave} = useAutoSave(save, 1000);
 
   const handleContentUpdate = useCallback(
     (newContent: JSONContent) => {

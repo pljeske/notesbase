@@ -8,7 +8,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/gin-gonic/gin"
 	"notes-app/backend/internal/config"
 	"notes-app/backend/internal/database"
 	"notes-app/backend/internal/handler"
@@ -16,6 +15,8 @@ import (
 	"notes-app/backend/internal/repository"
 	"notes-app/backend/internal/service"
 	"notes-app/backend/internal/storage"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {

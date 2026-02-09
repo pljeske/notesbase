@@ -1,12 +1,12 @@
-import { useEditor, EditorContent } from '@tiptap/react';
+import {EditorContent, useEditor} from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import Image from '@tiptap/extension-image';
-import { useEffect } from 'react';
-import { SlashCommand } from './SlashCommand';
-import { PdfBlock } from './PdfBlock';
-import type { JSONContent } from '../../types/page';
-import { uploadFile } from '../../api/upload';
+import {useEffect} from 'react';
+import {SlashCommand} from './SlashCommand';
+import {PdfBlock} from './PdfBlock';
+import type {JSONContent} from '../../types/page';
+import {uploadFile} from '../../api/upload';
 import './editor.css';
 
 interface EditorProps {
@@ -17,7 +17,7 @@ interface EditorProps {
   pageId: string;
 }
 
-export function Editor({ content, onUpdate, pageTitle, onTitleChange, pageId }: EditorProps) {
+export function Editor({content, onUpdate, pageTitle, onTitleChange, pageId}: EditorProps) {
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -32,7 +32,7 @@ export function Editor({ content, onUpdate, pageTitle, onTitleChange, pageId }: 
       SlashCommand,
     ],
     content: content ?? undefined,
-    onUpdate: ({ editor }) => {
+    onUpdate: ({editor}) => {
       onUpdate(editor.getJSON() as JSONContent);
     },
     editorProps: {
@@ -130,7 +130,7 @@ export function Editor({ content, onUpdate, pageTitle, onTitleChange, pageId }: 
         onChange={(e) => onTitleChange(e.target.value)}
         placeholder="Untitled"
       />
-      <EditorContent editor={editor} className="prose prose-lg max-w-none" />
+      <EditorContent editor={editor} className="prose prose-lg max-w-none"/>
     </div>
   );
 }
