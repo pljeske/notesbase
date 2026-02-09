@@ -3,6 +3,7 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
+  useRef,
   useState,
 } from 'react';
 import type { SlashCommandItem } from './slash-commands';
@@ -17,8 +18,21 @@ export const SlashCommandList = forwardRef<
   SlashCommandListProps
 >((props, ref) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => setSelectedIndex(0), [props.items]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const selectedEl = container.querySelector<HTMLButtonElement>(
+      `button[data-slash-index="${selectedIndex}"]`
+    );
+    if (!selectedEl) return;
+
+    selectedEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [selectedIndex, props.items]);
 
   const selectItem = useCallback(
     (index: number) => {
@@ -30,6 +44,8 @@ export const SlashCommandList = forwardRef<
 
   useImperativeHandle(ref, () => ({
     onKeyDown: ({ event }: { event: KeyboardEvent }) => {
+      if (props.items.length === 0) return false;
+
       if (event.key === 'ArrowUp') {
         setSelectedIndex(
           (i) => (i + props.items.length - 1) % props.items.length
@@ -57,14 +73,16 @@ export const SlashCommandList = forwardRef<
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-1 w-64 max-h-80 overflow-y-auto">
+    <div
+      ref={containerRef}
+      className="bg-white rounded-lg shadow-lg border border-gray-200 p-1 w-64 max-h-80 overflow-y-auto"
+    >
       {props.items.map((item, index) => (
         <button
           key={item.title}
+          data-slash-index={index}
           className={`flex items-center gap-3 w-full px-3 py-2 text-left rounded text-sm transition-colors ${
-            index === selectedIndex
-              ? 'bg-gray-100'
-              : 'hover:bg-gray-50'
+            index === selectedIndex ? 'bg-gray-100' : 'hover:bg-gray-50'
           }`}
           onClick={() => selectItem(index)}
         >
