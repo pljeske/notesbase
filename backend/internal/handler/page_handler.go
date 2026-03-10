@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 
+	"notes-app/backend/internal/middleware"
 	"notes-app/backend/internal/model"
 	"notes-app/backend/internal/service"
 
@@ -19,7 +20,8 @@ func NewPageHandler(s *service.PageService) *PageHandler {
 }
 
 func (h *PageHandler) ListPages(c *gin.Context) {
-	tree, err := h.service.GetTree(c.Request.Context())
+	userID := middleware.GetUserID(c)
+	tree, err := h.service.GetTree(c.Request.Context(), userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -28,13 +30,14 @@ func (h *PageHandler) ListPages(c *gin.Context) {
 }
 
 func (h *PageHandler) GetPage(c *gin.Context) {
+	userID := middleware.GetUserID(c)
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid page id"})
 		return
 	}
 
-	page, err := h.service.GetPage(c.Request.Context(), id)
+	page, err := h.service.GetPage(c.Request.Context(), userID, id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -48,13 +51,14 @@ func (h *PageHandler) GetPage(c *gin.Context) {
 }
 
 func (h *PageHandler) CreatePage(c *gin.Context) {
+	userID := middleware.GetUserID(c)
 	var req model.CreatePageRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		// Allow empty body - create with defaults
 		req = model.CreatePageRequest{}
 	}
 
-	page, err := h.service.CreatePage(c.Request.Context(), req)
+	page, err := h.service.CreatePage(c.Request.Context(), userID, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -64,6 +68,7 @@ func (h *PageHandler) CreatePage(c *gin.Context) {
 }
 
 func (h *PageHandler) UpdatePage(c *gin.Context) {
+	userID := middleware.GetUserID(c)
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid page id"})
@@ -76,7 +81,7 @@ func (h *PageHandler) UpdatePage(c *gin.Context) {
 		return
 	}
 
-	page, err := h.service.UpdatePage(c.Request.Context(), id, req)
+	page, err := h.service.UpdatePage(c.Request.Context(), userID, id, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -90,13 +95,14 @@ func (h *PageHandler) UpdatePage(c *gin.Context) {
 }
 
 func (h *PageHandler) DeletePage(c *gin.Context) {
+	userID := middleware.GetUserID(c)
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid page id"})
 		return
 	}
 
-	if err := h.service.DeletePage(c.Request.Context(), id); err != nil {
+	if err := h.service.DeletePage(c.Request.Context(), userID, id); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -105,6 +111,7 @@ func (h *PageHandler) DeletePage(c *gin.Context) {
 }
 
 func (h *PageHandler) MovePage(c *gin.Context) {
+	userID := middleware.GetUserID(c)
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid page id"})
@@ -117,7 +124,7 @@ func (h *PageHandler) MovePage(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.MovePage(c.Request.Context(), id, req); err != nil {
+	if err := h.service.MovePage(c.Request.Context(), userID, id, req); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

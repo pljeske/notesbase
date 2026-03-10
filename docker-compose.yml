@@ -46,6 +46,9 @@ services:
       MINIO_BUCKET: "notes-files"
       MINIO_USE_SSL: "false"
       MAX_UPLOAD_SIZE: "52428800"
+      JWT_SECRET: "your-secret-key-change-in-production"
+      JWT_ACCESS_EXPIRY: "15m"
+      JWT_REFRESH_EXPIRY: "168h"
     ports:
       - "8080:8080"
     depends_on:

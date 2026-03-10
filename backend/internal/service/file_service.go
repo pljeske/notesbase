@@ -2,9 +2,12 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"path"
+	"regexp"
 
 	"notes-app/backend/internal/model"
 	"notes-app/backend/internal/repository"
@@ -31,7 +34,7 @@ func NewFileService(repo repository.FileRepository, s3 *storage.S3Client) *FileS
 	return &FileService{repo: repo, storage: s3}
 }
 
-func (s *FileService) Upload(ctx context.Context, pageID uuid.UUID, filename string, contentType string, size int64, reader io.Reader) (*model.FileResponse, error) {
+func (s *FileService) Upload(ctx context.Context, userID uuid.UUID, pageID uuid.UUID, filename string, contentType string, size int64, reader io.Reader) (*model.FileResponse, error) {
 	if !allowedTypes[contentType] {
 		return nil, fmt.Errorf("unsupported file type: %s", contentType)
 	}
@@ -44,6 +47,7 @@ func (s *FileService) Upload(ctx context.Context, pageID uuid.UUID, filename str
 	}
 
 	file := &model.File{
+		UserID:      userID,
 		PageID:      pageID,
 		Filename:    filename,
 		ContentType: contentType,
@@ -64,8 +68,8 @@ func (s *FileService) Upload(ctx context.Context, pageID uuid.UUID, filename str
 	}, nil
 }
 
-func (s *FileService) GetFile(ctx context.Context, id uuid.UUID) (*model.File, io.ReadCloser, error) {
-	file, err := s.repo.GetByID(ctx, id)
+func (s *FileService) GetFile(ctx context.Context, userID uuid.UUID, id uuid.UUID) (*model.File, io.ReadCloser, error) {
+	file, err := s.repo.GetByID(ctx, userID, id)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -81,8 +85,8 @@ func (s *FileService) GetFile(ctx context.Context, id uuid.UUID) (*model.File, i
 	return file, reader, nil
 }
 
-func (s *FileService) DeleteFile(ctx context.Context, id uuid.UUID) error {
-	file, err := s.repo.GetByID(ctx, id)
+func (s *FileService) DeleteFile(ctx context.Context, userID uuid.UUID, id uuid.UUID) error {
+	file, err := s.repo.GetByID(ctx, userID, id)
 	if err != nil {
 		return err
 	}
@@ -94,5 +98,70 @@ func (s *FileService) DeleteFile(ctx context.Context, id uuid.UUID) error {
 		return fmt.Errorf("delete from storage: %w", err)
 	}
 
-	return s.repo.Delete(ctx, id)
+	return s.repo.Delete(ctx, userID, id)
+}
+
+// CleanupOrphanedFiles removes files that are associated with a page but no longer
+// referenced in its content. Called after page content is updated.
+func (s *FileService) CleanupOrphanedFiles(ctx context.Context, userID uuid.UUID, pageID uuid.UUID, content json.RawMessage) error {
+	pageFiles, err := s.repo.GetByPageID(ctx, pageID)
+	if err != nil {
+		return fmt.Errorf("get page files: %w", err)
+	}
+	if len(pageFiles) == 0 {
+		return nil
+	}
+
+	referencedIDs := extractFileIDs(content)
+
+	for _, f := range pageFiles {
+		if !referencedIDs[f.ID] {
+			if err := s.storage.Delete(ctx, f.S3Key); err != nil {
+				log.Printf("Warning: failed to delete S3 object %s: %v", f.S3Key, err)
+			}
+			if err := s.repo.Delete(ctx, userID, f.ID); err != nil {
+				log.Printf("Warning: failed to delete file record %s: %v", f.ID, err)
+			}
+		}
+	}
+	return nil
+}
+
+// DeleteAllPageFiles removes all files associated with a page from S3 and the database.
+// Called before a page is deleted.
+func (s *FileService) DeleteAllPageFiles(ctx context.Context, userID uuid.UUID, pageID uuid.UUID) error {
+	pageFiles, err := s.repo.GetByPageID(ctx, pageID)
+	if err != nil {
+		return fmt.Errorf("get page files: %w", err)
+	}
+
+	for _, f := range pageFiles {
+		if err := s.storage.Delete(ctx, f.S3Key); err != nil {
+			log.Printf("Warning: failed to delete S3 object %s: %v", f.S3Key, err)
+		}
+		if err := s.repo.Delete(ctx, userID, f.ID); err != nil {
+			log.Printf("Warning: failed to delete file record %s: %v", f.ID, err)
+		}
+	}
+	return nil
+}
+
+var fileIDPattern = regexp.MustCompile(`/api/files/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})`)
+
+// extractFileIDs walks the JSON content and extracts all file UUIDs referenced
+// in src attributes (images: /api/files/{id}, PDFs: /api/files/{id}).
+func extractFileIDs(content json.RawMessage) map[uuid.UUID]bool {
+	ids := make(map[uuid.UUID]bool)
+	if content == nil {
+		return ids
+	}
+
+	// Simple approach: find all /api/files/{uuid} patterns in the raw JSON
+	matches := fileIDPattern.FindAllStringSubmatch(string(content), -1)
+	for _, match := range matches {
+		if id, err := uuid.Parse(match[1]); err == nil {
+			ids[id] = true
+		}
+	}
+	return ids
 }

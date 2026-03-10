@@ -20,7 +20,7 @@ export function Sidebar() {
     <aside className="w-64 h-screen bg-gray-50 border-r border-gray-200 flex flex-col shrink-0">
       <div className="p-4 flex items-center justify-between border-b border-gray-200">
         <h1 className="text-sm font-semibold text-gray-700 tracking-wide">
-          Notes
+          notesbase
         </h1>
         <button
           onClick={handleCreatePage}

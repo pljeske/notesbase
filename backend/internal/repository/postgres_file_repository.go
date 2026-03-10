@@ -21,10 +21,10 @@ func NewPostgresFileRepository(pool *pgxpool.Pool) *PostgresFileRepository {
 
 func (r *PostgresFileRepository) Create(ctx context.Context, file *model.File) error {
 	err := r.pool.QueryRow(ctx,
-		`INSERT INTO files (page_id, filename, content_type, size, s3_key)
-		 VALUES ($1, $2, $3, $4, $5)
+		`INSERT INTO files (user_id, page_id, filename, content_type, size, s3_key)
+		 VALUES ($1, $2, $3, $4, $5, $6)
 		 RETURNING id, created_at`,
-		file.PageID, file.Filename, file.ContentType, file.Size, file.S3Key,
+		file.UserID, file.PageID, file.Filename, file.ContentType, file.Size, file.S3Key,
 	).Scan(&file.ID, &file.CreatedAt)
 	if err != nil {
 		return fmt.Errorf("insert file: %w", err)
@@ -32,11 +32,11 @@ func (r *PostgresFileRepository) Create(ctx context.Context, file *model.File) e
 	return nil
 }
 
-func (r *PostgresFileRepository) GetByID(ctx context.Context, id uuid.UUID) (*model.File, error) {
+func (r *PostgresFileRepository) GetByID(ctx context.Context, userID uuid.UUID, id uuid.UUID) (*model.File, error) {
 	var f model.File
 	err := r.pool.QueryRow(ctx,
 		`SELECT id, page_id, filename, content_type, size, s3_key, created_at
-		 FROM files WHERE id = $1`, id,
+		 FROM files WHERE id = $1 AND user_id = $2`, id, userID,
 	).Scan(&f.ID, &f.PageID, &f.Filename, &f.ContentType, &f.Size, &f.S3Key, &f.CreatedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -47,8 +47,29 @@ func (r *PostgresFileRepository) GetByID(ctx context.Context, id uuid.UUID) (*mo
 	return &f, nil
 }
 
-func (r *PostgresFileRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	tag, err := r.pool.Exec(ctx, `DELETE FROM files WHERE id = $1`, id)
+func (r *PostgresFileRepository) GetByPageID(ctx context.Context, pageID uuid.UUID) ([]model.File, error) {
+	rows, err := r.pool.Query(ctx,
+		`SELECT id, user_id, page_id, filename, content_type, size, s3_key, created_at
+		 FROM files WHERE page_id = $1`, pageID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("query files by page: %w", err)
+	}
+	defer rows.Close()
+
+	var files []model.File
+	for rows.Next() {
+		var f model.File
+		if err := rows.Scan(&f.ID, &f.UserID, &f.PageID, &f.Filename, &f.ContentType, &f.Size, &f.S3Key, &f.CreatedAt); err != nil {
+			return nil, fmt.Errorf("scan file: %w", err)
+		}
+		files = append(files, f)
+	}
+	return files, nil
+}
+
+func (r *PostgresFileRepository) Delete(ctx context.Context, userID uuid.UUID, id uuid.UUID) error {
+	tag, err := r.pool.Exec(ctx, `DELETE FROM files WHERE id = $1 AND user_id = $2`, id, userID)
 	if err != nil {
 		return fmt.Errorf("delete file: %w", err)
 	}

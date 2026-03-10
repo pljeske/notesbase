@@ -1,7 +1,7 @@
 import {EditorContent, useEditor} from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
-import Image from '@tiptap/extension-image';
+import {AuthImage} from './AuthImage';
 import {useEffect} from 'react';
 import {SlashCommand} from './SlashCommand';
 import {PdfBlock} from './PdfBlock';
@@ -24,10 +24,7 @@ export function Editor({content, onUpdate, pageTitle, onTitleChange, pageId}: Ed
       Placeholder.configure({
         placeholder: 'Type "/" for commands...',
       }),
-      Image.configure({
-        inline: false,
-        allowBase64: false,
-      }),
+      AuthImage,
       PdfBlock,
       SlashCommand,
     ],

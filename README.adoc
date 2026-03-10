@@ -1,0 +1,2 @@
+= notesbase
+Simple but scalable notes app

@@ -8,6 +8,7 @@ import (
 
 type File struct {
 	ID          uuid.UUID `json:"id"`
+	UserID      uuid.UUID `json:"-"`
 	PageID      uuid.UUID `json:"page_id"`
 	Filename    string    `json:"filename"`
 	ContentType string    `json:"content_type"`

@@ -1,6 +1,7 @@
 import {mergeAttributes, Node} from '@tiptap/core';
 import type {ReactNodeViewProps} from '@tiptap/react';
 import {NodeViewWrapper, ReactNodeViewRenderer} from '@tiptap/react';
+import {fetchAuthBlob} from '../../api/fetchFile';
 
 function PdfBlockView({node}: ReactNodeViewProps) {
   const src = node.attrs.src as string;
@@ -13,12 +14,21 @@ function PdfBlockView({node}: ReactNodeViewProps) {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
+  const handleClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    try {
+      const blobUrl = await fetchAuthBlob(src);
+      window.open(blobUrl, '_blank');
+    } catch (err) {
+      console.error('Failed to open PDF:', err);
+    }
+  };
+
   return (
     <NodeViewWrapper>
       <a
-        href={src}
-        target="_blank"
-        rel="noopener noreferrer"
+        href="#"
+        onClick={handleClick}
         className="pdf-block"
         contentEditable={false}
       >

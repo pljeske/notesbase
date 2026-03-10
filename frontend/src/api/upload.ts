@@ -1,3 +1,5 @@
+import {useAuthStore} from '../stores/authStore';
+
 const BASE_URL = import.meta.env.VITE_API_URL || '';
 
 export interface UploadResponse {
@@ -16,8 +18,15 @@ export async function uploadFile(
   formData.append('file', file);
   formData.append('page_id', pageId);
 
+  const token = useAuthStore.getState().token;
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   const response = await fetch(`${BASE_URL}/api/upload`, {
     method: 'POST',
+    headers,
     body: formData,
   });
 

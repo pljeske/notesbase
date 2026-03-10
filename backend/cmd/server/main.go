@@ -54,25 +54,37 @@ func main() {
 	log.Println("S3 storage ready")
 
 	// Wire up layers
-	pageRepo := repository.NewPostgresPageRepository(pool)
-	pageSvc := service.NewPageService(pageRepo)
-	pageHandler := handler.NewPageHandler(pageSvc)
-	healthHandler := handler.NewHealthHandler(pool)
-
 	fileRepo := repository.NewPostgresFileRepository(pool)
 	fileSvc := service.NewFileService(fileRepo, s3Client)
 	fileHandler := handler.NewFileHandler(fileSvc, cfg.MaxUploadSize)
+
+	pageRepo := repository.NewPostgresPageRepository(pool)
+	pageSvc := service.NewPageService(pageRepo, fileSvc)
+	pageHandler := handler.NewPageHandler(pageSvc)
+	healthHandler := handler.NewHealthHandler(pool)
+
+	// Auth layer
+	userRepo := repository.NewPostgresUserRepository(pool)
+	authSvc := service.NewAuthService(userRepo, cfg.JWTSecret, cfg.JWTAccessExpiry, cfg.JWTRefreshExpiry)
+	authHandler := handler.NewAuthHandler(authSvc)
+	authMiddleware := middleware.Auth(authSvc)
 
 	// Router
 	router := gin.Default()
 	router.Use(middleware.CORS(cfg.AllowedOrigins))
 
-	// Health routes
+	// Health routes (public)
 	router.GET("/healthz", healthHandler.Healthz)
 	router.GET("/readyz", healthHandler.Readyz)
 
-	// API routes
+	// Auth routes (public)
+	router.POST("/api/auth/register", authHandler.Register)
+	router.POST("/api/auth/login", authHandler.Login)
+	router.POST("/api/auth/refresh", authHandler.Refresh)
+
+	// Protected API routes
 	api := router.Group("/api")
+	api.Use(authMiddleware)
 	{
 		api.GET("/pages", pageHandler.ListPages)
 		api.GET("/pages/:id", pageHandler.GetPage)

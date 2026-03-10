@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"log"
 	"sort"
 
 	"notes-app/backend/internal/model"
@@ -11,39 +12,59 @@ import (
 )
 
 type PageService struct {
-	repo repository.PageRepository
+	repo    repository.PageRepository
+	fileSvc *FileService
 }
 
-func NewPageService(repo repository.PageRepository) *PageService {
-	return &PageService{repo: repo}
+func NewPageService(repo repository.PageRepository, fileSvc *FileService) *PageService {
+	return &PageService{repo: repo, fileSvc: fileSvc}
 }
 
-func (s *PageService) GetTree(ctx context.Context) ([]model.PageTreeNode, error) {
-	pages, err := s.repo.GetAll(ctx)
+func (s *PageService) GetTree(ctx context.Context, userID uuid.UUID) ([]model.PageTreeNode, error) {
+	pages, err := s.repo.GetAll(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 	return buildTree(pages), nil
 }
 
-func (s *PageService) GetPage(ctx context.Context, id uuid.UUID) (*model.Page, error) {
-	return s.repo.GetByID(ctx, id)
+func (s *PageService) GetPage(ctx context.Context, userID uuid.UUID, id uuid.UUID) (*model.Page, error) {
+	return s.repo.GetByID(ctx, userID, id)
 }
 
-func (s *PageService) CreatePage(ctx context.Context, req model.CreatePageRequest) (*model.Page, error) {
-	return s.repo.Create(ctx, req)
+func (s *PageService) CreatePage(ctx context.Context, userID uuid.UUID, req model.CreatePageRequest) (*model.Page, error) {
+	return s.repo.Create(ctx, userID, req)
 }
 
-func (s *PageService) UpdatePage(ctx context.Context, id uuid.UUID, req model.UpdatePageRequest) (*model.Page, error) {
-	return s.repo.Update(ctx, id, req)
+func (s *PageService) UpdatePage(ctx context.Context, userID uuid.UUID, id uuid.UUID, req model.UpdatePageRequest) (*model.Page, error) {
+	page, err := s.repo.Update(ctx, userID, id, req)
+	if err != nil {
+		return nil, err
+	}
+
+	// Clean up orphaned files if content was updated
+	if req.Content != nil && s.fileSvc != nil {
+		if err := s.fileSvc.CleanupOrphanedFiles(ctx, userID, id, page.Content); err != nil {
+			log.Printf("Warning: failed to clean up orphaned files for page %s: %v", id, err)
+		}
+	}
+
+	return page, nil
 }
 
-func (s *PageService) DeletePage(ctx context.Context, id uuid.UUID) error {
-	return s.repo.Delete(ctx, id)
+func (s *PageService) DeletePage(ctx context.Context, userID uuid.UUID, id uuid.UUID) error {
+	// Delete all files from S3 before the page cascade deletes them from DB
+	if s.fileSvc != nil {
+		if err := s.fileSvc.DeleteAllPageFiles(ctx, userID, id); err != nil {
+			log.Printf("Warning: failed to delete files for page %s: %v", id, err)
+		}
+	}
+
+	return s.repo.Delete(ctx, userID, id)
 }
 
-func (s *PageService) MovePage(ctx context.Context, id uuid.UUID, req model.MovePageRequest) error {
-	return s.repo.Move(ctx, id, req)
+func (s *PageService) MovePage(ctx context.Context, userID uuid.UUID, id uuid.UUID, req model.MovePageRequest) error {
+	return s.repo.Move(ctx, userID, id, req)
 }
 
 func buildTree(pages []model.Page) []model.PageTreeNode {

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"notes-app/backend/internal/middleware"
 	"notes-app/backend/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -21,6 +22,7 @@ func NewFileHandler(s *service.FileService, maxUploadSize int64) *FileHandler {
 }
 
 func (h *FileHandler) Upload(c *gin.Context) {
+	userID := middleware.GetUserID(c)
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, h.maxUploadSize)
 
 	file, header, err := c.Request.FormFile("file")
@@ -44,6 +46,7 @@ func (h *FileHandler) Upload(c *gin.Context) {
 
 	resp, err := h.service.Upload(
 		c.Request.Context(),
+		userID,
 		pageID,
 		header.Filename,
 		contentType,
@@ -59,13 +62,14 @@ func (h *FileHandler) Upload(c *gin.Context) {
 }
 
 func (h *FileHandler) GetFile(c *gin.Context) {
+	userID := middleware.GetUserID(c)
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid file id"})
 		return
 	}
 
-	fileMeta, reader, err := h.service.GetFile(c.Request.Context(), id)
+	fileMeta, reader, err := h.service.GetFile(c.Request.Context(), userID, id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -86,13 +90,14 @@ func (h *FileHandler) GetFile(c *gin.Context) {
 }
 
 func (h *FileHandler) DeleteFile(c *gin.Context) {
+	userID := middleware.GetUserID(c)
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid file id"})
 		return
 	}
 
-	if err := h.service.DeleteFile(c.Request.Context(), id); err != nil {
+	if err := h.service.DeleteFile(c.Request.Context(), userID, id); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

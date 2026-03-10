@@ -90,6 +90,24 @@
   margin: 1em 0;
 }
 
+.tiptap .auth-image-loading,
+.tiptap .auth-image-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f3f4f6;
+  border-radius: 0.5rem;
+  margin: 1em 0;
+  padding: 2rem;
+  color: #9ca3af;
+  font-size: 0.875rem;
+}
+
+.tiptap .auth-image-error {
+  color: #ef4444;
+  background-color: #fef2f2;
+}
+
 .tiptap .pdf-block {
   display: flex;
   align-items: center;
