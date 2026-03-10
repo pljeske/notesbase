@@ -1,13 +1,24 @@
-import {EditorContent, useEditor} from '@tiptap/react';
+import {EditorContent, ReactNodeViewRenderer, useEditor} from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
+import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
+import {createLowlight, common} from 'lowlight';
 import {AuthImage} from './AuthImage';
 import {useEffect} from 'react';
 import {SlashCommand} from './SlashCommand';
 import {PdfBlock} from './PdfBlock';
+import {CodeBlockView} from './CodeBlockView';
 import type {JSONContent} from '../../types/page';
 import {uploadFile} from '../../api/upload';
+import 'highlight.js/styles/github-dark.css';
 import './editor.css';
+
+const lowlight = createLowlight(common);
+const CodeBlockWithLanguage = CodeBlockLowlight.extend({
+  addNodeView() {
+    return ReactNodeViewRenderer(CodeBlockView);
+  },
+}).configure({lowlight, defaultLanguage: null});
 
 interface EditorProps {
   content: JSONContent | null;
@@ -20,7 +31,8 @@ interface EditorProps {
 export function Editor({content, onUpdate, pageTitle, onTitleChange, pageId}: EditorProps) {
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({codeBlock: false}),
+      CodeBlockWithLanguage,
       Placeholder.configure({
         placeholder: 'Type "/" for commands...',
       }),

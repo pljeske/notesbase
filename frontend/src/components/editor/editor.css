@@ -52,10 +52,40 @@
 .tiptap pre {
   background-color: #1f2937;
   color: #e5e7eb;
-  border-radius: 0.5rem;
+  border-radius: 0 0 0.5rem 0.5rem;
   padding: 1em;
   overflow-x: auto;
+  margin: 0;
+}
+
+.tiptap .code-block-wrapper {
+  position: relative;
   margin: 0.8em 0;
+}
+
+.tiptap .code-block-header {
+  display: flex;
+  align-items: center;
+  background: #111827;
+  border-radius: 0.5rem 0.5rem 0 0;
+  padding: 0.25rem 0.75rem;
+}
+
+.tiptap .code-block-language-select {
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  font-size: 0.75rem;
+  cursor: pointer;
+  outline: none;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+}
+
+.tiptap .code-block-language-select:hover,
+.tiptap .code-block-language-select:focus {
+  background: #1f2937;
+  color: #e5e7eb;
 }
 
 .tiptap pre code {
