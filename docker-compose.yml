@@ -49,6 +49,7 @@ services:
       JWT_SECRET: "your-secret-key-change-in-production"
       JWT_ACCESS_EXPIRY: "15m"
       JWT_REFRESH_EXPIRY: "168h"
+      DISABLE_REGISTRATION: false
     # access to backend is proxied via frontend /api path
 #    ports:
 #      - "8080:8080"

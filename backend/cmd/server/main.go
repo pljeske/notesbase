@@ -70,7 +70,7 @@ func main() {
 	// Auth layer
 	userRepo := repository.NewPostgresUserRepository(pool)
 	authSvc := service.NewAuthService(userRepo, cfg.JWTSecret, cfg.JWTAccessExpiry, cfg.JWTRefreshExpiry)
-	authHandler := handler.NewAuthHandler(authSvc)
+	authHandler := handler.NewAuthHandler(authSvc, cfg.RegistrationDisabled)
 	authMiddleware := middleware.Auth(authSvc)
 
 	// Router
@@ -82,6 +82,7 @@ func main() {
 	router.GET("/readyz", healthHandler.Readyz)
 
 	// Auth routes (public)
+	router.GET("/api/config", authHandler.GetConfig)
 	router.POST("/api/auth/register", authHandler.Register)
 	router.POST("/api/auth/login", authHandler.Login)
 	router.POST("/api/auth/refresh", authHandler.Refresh)

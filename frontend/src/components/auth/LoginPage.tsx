@@ -1,5 +1,6 @@
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
+import {authApi} from '../../api/auth';
 import {useAuthStore} from '../../stores/authStore';
 
 export function LoginPage() {
@@ -7,6 +8,11 @@ export function LoginPage() {
   const {login, isLoading, error, setError} = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [registrationEnabled, setRegistrationEnabled] = useState(true);
+
+  useEffect(() => {
+    authApi.getConfig().then((cfg) => setRegistrationEnabled(cfg.registration_enabled)).catch(() => {});
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,12 +79,14 @@ export function LoginPage() {
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-gray-500">
-            Don&apos;t have an account?{' '}
-            <Link to="/register" className="font-medium text-gray-900 hover:underline">
-              Create one
-            </Link>
-          </p>
+          {registrationEnabled && (
+            <p className="mt-6 text-center text-sm text-gray-500">
+              Don&apos;t have an account?{' '}
+              <Link to="/register" className="font-medium text-gray-900 hover:underline">
+                Create one
+              </Link>
+            </p>
+          )}
         </div>
       </div>
     </div>

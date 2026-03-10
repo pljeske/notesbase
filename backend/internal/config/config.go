@@ -13,9 +13,10 @@ type Config struct {
 	ShutdownTimeout time.Duration
 
 	// JWT Authentication
-	JWTSecret        string
-	JWTAccessExpiry  time.Duration
-	JWTRefreshExpiry time.Duration
+	JWTSecret            string
+	JWTAccessExpiry      time.Duration
+	JWTRefreshExpiry     time.Duration
+	RegistrationDisabled bool
 
 	// MinIO / S3
 	MinioEndpoint  string
@@ -33,9 +34,10 @@ func Load() *Config {
 		AllowedOrigins:  getEnv("CORS_ALLOWED_ORIGINS", "http://localhost:5173"),
 		ShutdownTimeout: getDuration("SHUTDOWN_TIMEOUT", 10*time.Second),
 
-		JWTSecret:        getEnv("JWT_SECRET", "change-me-in-production"),
-		JWTAccessExpiry:  getDuration("JWT_ACCESS_EXPIRY", 15*time.Minute),
-		JWTRefreshExpiry: getDuration("JWT_REFRESH_EXPIRY", 168*time.Hour),
+		JWTSecret:            getEnv("JWT_SECRET", "change-me-in-production"),
+		JWTAccessExpiry:      getDuration("JWT_ACCESS_EXPIRY", 15*time.Minute),
+		JWTRefreshExpiry:     getDuration("JWT_REFRESH_EXPIRY", 168*time.Hour),
+		RegistrationDisabled: getEnv("DISABLE_REGISTRATION", "false") == "true",
 
 		MinioEndpoint:  getEnv("MINIO_ENDPOINT", "localhost:9000"),
 		MinioAccessKey: getEnv("MINIO_ACCESS_KEY", "minioadmin"),

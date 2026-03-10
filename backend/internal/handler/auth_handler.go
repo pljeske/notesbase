@@ -10,14 +10,24 @@ import (
 )
 
 type AuthHandler struct {
-	service *service.AuthService
+	service              *service.AuthService
+	registrationDisabled bool
 }
 
-func NewAuthHandler(s *service.AuthService) *AuthHandler {
-	return &AuthHandler{service: s}
+func NewAuthHandler(s *service.AuthService, registrationDisabled bool) *AuthHandler {
+	return &AuthHandler{service: s, registrationDisabled: registrationDisabled}
+}
+
+func (h *AuthHandler) GetConfig(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"registration_enabled": !h.registrationDisabled})
 }
 
 func (h *AuthHandler) Register(c *gin.Context) {
+	if h.registrationDisabled {
+		c.JSON(http.StatusForbidden, gin.H{"error": "registration is disabled"})
+		return
+	}
+
 	var req model.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

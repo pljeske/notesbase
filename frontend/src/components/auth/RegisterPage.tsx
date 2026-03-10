@@ -1,5 +1,6 @@
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
+import {authApi} from '../../api/auth';
 import {useAuthStore} from '../../stores/authStore';
 
 export function RegisterPage() {
@@ -10,6 +11,11 @@ export function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [validationError, setValidationError] = useState('');
+  const [registrationEnabled, setRegistrationEnabled] = useState(true);
+
+  useEffect(() => {
+    authApi.getConfig().then((cfg) => setRegistrationEnabled(cfg.registration_enabled)).catch(() => {});
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,6 +48,12 @@ export function RegisterPage() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
           <h1 className="text-2xl font-bold text-gray-900 mb-1">Create account</h1>
           <p className="text-sm text-gray-500 mb-6">Get started with your notes</p>
+
+          {!registrationEnabled && (
+            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md text-sm text-yellow-800">
+              Registration is currently disabled.
+            </div>
+          )}
 
           {displayError && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-600">
@@ -114,7 +126,7 @@ export function RegisterPage() {
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || !registrationEnabled}
               className="w-full py-2 px-4 bg-gray-900 text-white text-sm font-medium rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? 'Creating account...' : 'Create account'}
