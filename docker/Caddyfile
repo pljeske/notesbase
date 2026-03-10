@@ -1,0 +1,42 @@
+{
+    admin off
+    auto_https off
+}
+
+:8080 {
+    root * /srv
+
+    # Compress all responses
+    encode gzip zstd
+
+    handle /health {
+        respond "ok" 200
+    }
+
+    # Proxy API and health check routes to the backend (Docker Compose only).
+    # In K8s the Ingress controller intercepts these routes before they reach this pod.
+    handle /api/* {
+        reverse_proxy backend:8080
+    }
+    handle /healthz {
+        reverse_proxy backend:8080
+    }
+    handle /readyz {
+        reverse_proxy backend:8080
+    }
+
+    # Catch-all: serve static files with SPA fallback.
+    # Keeping try_files inside this handle block is critical — if it were at the
+    # top level, Caddy would rewrite /api/* paths to /index.html before handle
+    # matching, causing file_server to return 405 for POST requests.
+    handle {
+        try_files {path} /index.html
+        file_server
+
+        @static path *.js *.css *.woff2 *.woff *.ttf *.eot *.ico *.svg *.png *.jpg *.jpeg *.gif *.webp
+        header @static Cache-Control "public, max-age=31536000, immutable"
+
+        @html path /index.html /
+        header @html Cache-Control "no-cache, no-store, must-revalidate"
+    }
+}

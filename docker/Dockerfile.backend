@@ -4,9 +4,19 @@ WORKDIR /app
 COPY backend/go.mod backend/go.sum ./
 RUN go mod download
 COPY backend/ .
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /server ./cmd/server
+ARG VERSION=dev
+ARG COMMIT=unknown
+RUN CGO_ENABLED=0 GOOS=linux go build \
+    -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT}" \
+    -o /server ./cmd/server
 
 FROM gcr.io/distroless/static-debian12
+ARG VERSION=dev
+ARG COMMIT=unknown
+LABEL org.opencontainers.image.title="notesbase-backend" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.revision="${COMMIT}" \
+      org.opencontainers.image.source="https://github.com/pljeske/notesbase"
 COPY --from=builder /server /server
 COPY --from=builder /app/migrations /migrations
 EXPOSE 8080

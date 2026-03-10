@@ -3,12 +3,29 @@ WORKDIR /app
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 COPY frontend/ .
+# Leave VITE_API_URL empty (default) so the app uses relative URLs.
+# This makes the image portable across Docker Compose and Kubernetes.
 ARG VITE_API_URL=
 ENV VITE_API_URL=$VITE_API_URL
+ARG VERSION=dev
+ARG COMMIT=unknown
 RUN npm run build
 
-FROM nginx:1.27-alpine
-COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=builder /app/dist /usr/share/nginx/html
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+FROM caddy:2-alpine
+
+ARG VERSION=dev
+ARG COMMIT=unknown
+
+LABEL org.opencontainers.image.title="notesbase-frontend" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.revision="${COMMIT}" \
+      org.opencontainers.image.source="https://github.com/pljeske/notesbase"
+
+COPY docker/Caddyfile /etc/caddy/Caddyfile
+COPY --from=builder /app/dist /srv
+
+EXPOSE 8080
+# OTel tracing: set OTEL_EXPORTER_OTLP_ENDPOINT (and optionally OTEL_SERVICE_NAME)
+# at runtime to enable distributed tracing via Caddy's built-in OTel support.
+HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget -qO- http://localhost:8080/health || exit 1
