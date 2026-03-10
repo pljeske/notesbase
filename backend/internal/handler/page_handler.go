@@ -131,3 +131,67 @@ func (h *PageHandler) MovePage(c *gin.Context) {
 
 	c.Status(http.StatusNoContent)
 }
+
+func (h *PageHandler) ListTrash(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	pages, err := h.service.ListTrash(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if pages == nil {
+		pages = []model.TrashedPage{}
+	}
+	c.JSON(http.StatusOK, pages)
+}
+
+func (h *PageHandler) RestorePage(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid page id"})
+		return
+	}
+
+	if err := h.service.RestorePage(c.Request.Context(), userID, id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.Status(http.StatusNoContent)
+}
+
+func (h *PageHandler) PermanentDelete(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid page id"})
+		return
+	}
+
+	if err := h.service.PermanentDeletePage(c.Request.Context(), userID, id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.Status(http.StatusNoContent)
+}
+
+func (h *PageHandler) DuplicatePage(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid page id"})
+		return
+	}
+
+	var req model.DuplicatePageRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		req = model.DuplicatePageRequest{}
+	}
+
+	page, err := h.service.DuplicatePage(c.Request.Context(), userID, id, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusCreated, page)
+}

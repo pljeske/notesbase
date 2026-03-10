@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS page_tags;
+DROP TABLE IF EXISTS tags;

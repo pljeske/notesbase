@@ -3,6 +3,7 @@ import {useParams} from 'react-router-dom';
 import {usePageStore} from '../stores/pageStore';
 import {useAutoSave} from '../hooks/useAutoSave';
 import {Editor} from './editor/Editor';
+import {TagPicker} from './editor/TagPicker';
 import type {JSONContent} from '../types/page';
 
 export function PageView() {
@@ -63,13 +64,23 @@ export function PageView() {
   }
 
   return (
-    <Editor
-      key={pageId}
-      content={content}
-      onUpdate={handleContentUpdate}
-      pageTitle={title}
-      onTitleChange={handleTitleChange}
-      pageId={pageId!}
-    />
+    <div className="flex flex-col h-full">
+      <div className="px-8 pt-4 pb-2">
+        <TagPicker
+          pageId={pageId!}
+          selectedTags={activePage?.tags ?? []}
+        />
+      </div>
+      <div className="flex-1 min-h-0">
+        <Editor
+          key={pageId}
+          content={content}
+          onUpdate={handleContentUpdate}
+          pageTitle={title}
+          onTitleChange={handleTitleChange}
+          pageId={pageId!}
+        />
+      </div>
+    </div>
   );
 }

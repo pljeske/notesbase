@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"notes-app/backend/internal/model"
 
@@ -23,7 +24,7 @@ func NewPostgresPageRepository(pool *pgxpool.Pool) *PostgresPageRepository {
 func (r *PostgresPageRepository) GetAll(ctx context.Context, userID uuid.UUID) ([]model.Page, error) {
 	rows, err := r.pool.Query(ctx,
 		`SELECT id, parent_id, title, icon, position, created_at, updated_at
-		 FROM pages WHERE user_id = $1 ORDER BY position ASC`, userID)
+		 FROM pages WHERE user_id = $1 AND deleted_at IS NULL ORDER BY position ASC`, userID)
 	if err != nil {
 		return nil, fmt.Errorf("query pages: %w", err)
 	}
@@ -44,7 +45,7 @@ func (r *PostgresPageRepository) GetByID(ctx context.Context, userID uuid.UUID, 
 	var p model.Page
 	err := r.pool.QueryRow(ctx,
 		`SELECT id, parent_id, title, content, icon, position, created_at, updated_at
-		 FROM pages WHERE id = $1 AND user_id = $2`, id, userID).
+		 FROM pages WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL`, id, userID).
 		Scan(&p.ID, &p.ParentID, &p.Title, &p.Content, &p.Icon, &p.Position, &p.CreatedAt, &p.UpdatedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -64,7 +65,7 @@ func (r *PostgresPageRepository) Create(ctx context.Context, userID uuid.UUID, r
 	var p model.Page
 	err := r.pool.QueryRow(ctx,
 		`INSERT INTO pages (user_id, parent_id, title, position)
-		 VALUES ($1, $2, $3, (SELECT COALESCE(MAX(position), -1) + 1 FROM pages WHERE user_id = $1 AND parent_id IS NOT DISTINCT FROM $2))
+		 VALUES ($1, $2, $3, (SELECT COALESCE(MAX(position), -1) + 1 FROM pages WHERE user_id = $1 AND parent_id IS NOT DISTINCT FROM $2 AND deleted_at IS NULL))
 		 RETURNING id, parent_id, title, content, icon, position, created_at, updated_at`,
 		userID, req.ParentID, title).
 		Scan(&p.ID, &p.ParentID, &p.Title, &p.Content, &p.Icon, &p.Position, &p.CreatedAt, &p.UpdatedAt)
@@ -74,8 +75,24 @@ func (r *PostgresPageRepository) Create(ctx context.Context, userID uuid.UUID, r
 	return &p, nil
 }
 
+func (r *PostgresPageRepository) CreateWithID(ctx context.Context, userID uuid.UUID, id uuid.UUID, parentID *uuid.UUID, title string, content []byte, icon *string) (*model.Page, error) {
+	if title == "" {
+		title = "Untitled"
+	}
+	var p model.Page
+	err := r.pool.QueryRow(ctx,
+		`INSERT INTO pages (id, user_id, parent_id, title, content, icon, position)
+		 VALUES ($1, $2, $3, $4, $5, $6, (SELECT COALESCE(MAX(position), -1) + 1 FROM pages WHERE user_id = $2 AND parent_id IS NOT DISTINCT FROM $3 AND deleted_at IS NULL))
+		 RETURNING id, parent_id, title, content, icon, position, created_at, updated_at`,
+		id, userID, parentID, title, content, icon).
+		Scan(&p.ID, &p.ParentID, &p.Title, &p.Content, &p.Icon, &p.Position, &p.CreatedAt, &p.UpdatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("insert page with id: %w", err)
+	}
+	return &p, nil
+}
+
 func (r *PostgresPageRepository) Update(ctx context.Context, userID uuid.UUID, id uuid.UUID, req model.UpdatePageRequest) (*model.Page, error) {
-	// Build dynamic update
 	setClauses := ""
 	args := []interface{}{}
 	argIdx := 1
@@ -101,11 +118,10 @@ func (r *PostgresPageRepository) Update(ctx context.Context, userID uuid.UUID, i
 		return r.GetByID(ctx, userID, id)
 	}
 
-	// Remove trailing comma+space
 	setClauses = setClauses[:len(setClauses)-2]
 
 	query := fmt.Sprintf(
-		`UPDATE pages SET %s WHERE id = $%d AND user_id = $%d
+		`UPDATE pages SET %s WHERE id = $%d AND user_id = $%d AND deleted_at IS NULL
 		 RETURNING id, parent_id, title, content, icon, position, created_at, updated_at`,
 		setClauses, argIdx, argIdx+1)
 	args = append(args, id, userID)
@@ -133,6 +149,134 @@ func (r *PostgresPageRepository) Delete(ctx context.Context, userID uuid.UUID, i
 	return nil
 }
 
+func (r *PostgresPageRepository) SoftDelete(ctx context.Context, userID uuid.UUID, id uuid.UUID) error {
+	_, err := r.pool.Exec(ctx,
+		`WITH RECURSIVE subtree AS (
+			SELECT id FROM pages WHERE id = $1 AND user_id = $2
+			UNION ALL
+			SELECT p.id FROM pages p JOIN subtree s ON p.parent_id = s.id
+		)
+		UPDATE pages SET deleted_at = NOW()
+		WHERE id IN (SELECT id FROM subtree) AND deleted_at IS NULL`,
+		id, userID)
+	if err != nil {
+		return fmt.Errorf("soft delete page: %w", err)
+	}
+	return nil
+}
+
+func (r *PostgresPageRepository) ListTrashed(ctx context.Context, userID uuid.UUID) ([]model.TrashedPage, error) {
+	// Auto-purge pages older than 30 days
+	_, _ = r.PurgeExpired(ctx, userID, time.Now().AddDate(0, 0, -30))
+
+	rows, err := r.pool.Query(ctx,
+		`SELECT id, title, icon, deleted_at
+		 FROM pages WHERE user_id = $1 AND deleted_at IS NOT NULL
+		 ORDER BY deleted_at DESC`, userID)
+	if err != nil {
+		return nil, fmt.Errorf("list trashed: %w", err)
+	}
+	defer rows.Close()
+
+	var pages []model.TrashedPage
+	for rows.Next() {
+		var p model.TrashedPage
+		if err := rows.Scan(&p.ID, &p.Title, &p.Icon, &p.DeletedAt); err != nil {
+			return nil, fmt.Errorf("scan trashed page: %w", err)
+		}
+		pages = append(pages, p)
+	}
+	return pages, rows.Err()
+}
+
+func (r *PostgresPageRepository) Restore(ctx context.Context, userID uuid.UUID, id uuid.UUID) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	// Check if the page's parent is also deleted; if so, re-parent to root
+	_, err = tx.Exec(ctx,
+		`UPDATE pages SET
+			deleted_at = NULL,
+			parent_id = CASE
+				WHEN parent_id IS NOT NULL AND EXISTS (
+					SELECT 1 FROM pages p2 WHERE p2.id = pages.parent_id AND p2.deleted_at IS NOT NULL
+				) THEN NULL
+				ELSE parent_id
+			END
+		WHERE id = $1 AND user_id = $2 AND deleted_at IS NOT NULL`,
+		id, userID)
+	if err != nil {
+		return fmt.Errorf("restore page: %w", err)
+	}
+
+	return tx.Commit(ctx)
+}
+
+func (r *PostgresPageRepository) HardDelete(ctx context.Context, userID uuid.UUID, id uuid.UUID) error {
+	tag, err := r.pool.Exec(ctx,
+		`DELETE FROM pages WHERE id = $1 AND user_id = $2 AND deleted_at IS NOT NULL`,
+		id, userID)
+	if err != nil {
+		return fmt.Errorf("hard delete page: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return fmt.Errorf("page not found in trash")
+	}
+	return nil
+}
+
+func (r *PostgresPageRepository) PurgeExpired(ctx context.Context, userID uuid.UUID, before time.Time) ([]uuid.UUID, error) {
+	rows, err := r.pool.Query(ctx,
+		`DELETE FROM pages WHERE user_id = $1 AND deleted_at IS NOT NULL AND deleted_at < $2 RETURNING id`,
+		userID, before)
+	if err != nil {
+		return nil, fmt.Errorf("purge expired: %w", err)
+	}
+	defer rows.Close()
+
+	var ids []uuid.UUID
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("scan purged id: %w", err)
+		}
+		ids = append(ids, id)
+	}
+	return ids, rows.Err()
+}
+
+func (r *PostgresPageRepository) GetDescendants(ctx context.Context, userID uuid.UUID, id uuid.UUID) ([]model.Page, error) {
+	rows, err := r.pool.Query(ctx,
+		`WITH RECURSIVE subtree AS (
+			SELECT id, parent_id, title, content, icon, position, created_at, updated_at, 0 AS depth
+			FROM pages WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
+			UNION ALL
+			SELECT p.id, p.parent_id, p.title, p.content, p.icon, p.position, p.created_at, p.updated_at, s.depth + 1
+			FROM pages p JOIN subtree s ON p.parent_id = s.id
+			WHERE p.deleted_at IS NULL
+		)
+		SELECT id, parent_id, title, content, icon, position, created_at, updated_at
+		FROM subtree ORDER BY depth ASC, position ASC`,
+		id, userID)
+	if err != nil {
+		return nil, fmt.Errorf("get descendants: %w", err)
+	}
+	defer rows.Close()
+
+	var pages []model.Page
+	for rows.Next() {
+		var p model.Page
+		if err := rows.Scan(&p.ID, &p.ParentID, &p.Title, &p.Content, &p.Icon, &p.Position, &p.CreatedAt, &p.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("scan descendant: %w", err)
+		}
+		pages = append(pages, p)
+	}
+	return pages, rows.Err()
+}
+
 func (r *PostgresPageRepository) Move(ctx context.Context, userID uuid.UUID, id uuid.UUID, req model.MovePageRequest) error {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
@@ -140,9 +284,8 @@ func (r *PostgresPageRepository) Move(ctx context.Context, userID uuid.UUID, id 
 	}
 	defer tx.Rollback(ctx)
 
-	// Update the page's parent and position (only if owned by user)
 	tag, err := tx.Exec(ctx,
-		`UPDATE pages SET parent_id = $1, position = $2 WHERE id = $3 AND user_id = $4`,
+		`UPDATE pages SET parent_id = $1, position = $2 WHERE id = $3 AND user_id = $4 AND deleted_at IS NULL`,
 		req.ParentID, req.Position, id, userID)
 	if err != nil {
 		return fmt.Errorf("move page: %w", err)
@@ -151,12 +294,11 @@ func (r *PostgresPageRepository) Move(ctx context.Context, userID uuid.UUID, id 
 		return fmt.Errorf("page not found")
 	}
 
-	// Re-sequence siblings in the target parent to avoid gaps/collisions
 	_, err = tx.Exec(ctx,
 		`WITH ranked AS (
 			SELECT id, ROW_NUMBER() OVER (ORDER BY position, updated_at) - 1 AS new_pos
 			FROM pages
-			WHERE user_id = $1 AND parent_id IS NOT DISTINCT FROM $2
+			WHERE user_id = $1 AND parent_id IS NOT DISTINCT FROM $2 AND deleted_at IS NULL
 		)
 		UPDATE pages SET position = ranked.new_pos
 		FROM ranked WHERE pages.id = ranked.id`,

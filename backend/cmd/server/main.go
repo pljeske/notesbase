@@ -58,9 +58,13 @@ func main() {
 	fileSvc := service.NewFileService(fileRepo, s3Client)
 	fileHandler := handler.NewFileHandler(fileSvc, cfg.MaxUploadSize)
 
+	tagRepo := repository.NewPostgresTagRepository(pool)
+	tagSvc := service.NewTagService(tagRepo)
+
 	pageRepo := repository.NewPostgresPageRepository(pool)
-	pageSvc := service.NewPageService(pageRepo, fileSvc)
+	pageSvc := service.NewPageService(pageRepo, tagRepo, fileSvc)
 	pageHandler := handler.NewPageHandler(pageSvc)
+	tagHandler := handler.NewTagHandler(tagSvc, pageSvc)
 	healthHandler := handler.NewHealthHandler(pool)
 
 	// Auth layer
@@ -92,6 +96,17 @@ func main() {
 		api.PUT("/pages/:id", pageHandler.UpdatePage)
 		api.DELETE("/pages/:id", pageHandler.DeletePage)
 		api.PATCH("/pages/:id/move", pageHandler.MovePage)
+		api.POST("/pages/:id/restore", pageHandler.RestorePage)
+		api.POST("/pages/:id/duplicate", pageHandler.DuplicatePage)
+
+		api.GET("/trash", pageHandler.ListTrash)
+		api.DELETE("/trash/:id", pageHandler.PermanentDelete)
+
+		api.GET("/tags", tagHandler.ListTags)
+		api.POST("/tags", tagHandler.CreateTag)
+		api.PUT("/tags/:id", tagHandler.UpdateTag)
+		api.DELETE("/tags/:id", tagHandler.DeleteTag)
+		api.GET("/tags/:id/pages", tagHandler.ListPagesByTag)
 
 		api.POST("/upload", fileHandler.Upload)
 		api.GET("/files/:id", fileHandler.GetFile)

@@ -64,3 +64,13 @@ func (s *S3Client) Delete(ctx context.Context, key string) error {
 	}
 	return nil
 }
+
+func (s *S3Client) Copy(ctx context.Context, srcKey, dstKey string) error {
+	src := minio.CopySrcOptions{Bucket: s.bucket, Object: srcKey}
+	dst := minio.CopyDestOptions{Bucket: s.bucket, Object: dstKey}
+	_, err := s.client.CopyObject(ctx, dst, src)
+	if err != nil {
+		return fmt.Errorf("copy object: %w", err)
+	}
+	return nil
+}

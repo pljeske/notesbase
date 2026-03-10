@@ -1,3 +1,7 @@
+import type {Tag} from './tag';
+
+export type {Tag};
+
 export interface Page {
   id: string;
   parent_id: string | null;
@@ -5,8 +9,10 @@ export interface Page {
   content: JSONContent | null;
   icon: string | null;
   position: number;
+  tags: Tag[];
   created_at: string;
   updated_at: string;
+  deleted_at?: string;
 }
 
 export interface PageTreeNode {
@@ -15,9 +21,17 @@ export interface PageTreeNode {
   title: string;
   icon: string | null;
   position: number;
+  tags: Tag[];
   children: PageTreeNode[];
   created_at: string;
   updated_at: string;
+}
+
+export interface TrashedPage {
+  id: string;
+  title: string;
+  icon: string | null;
+  deleted_at: string;
 }
 
 export interface JSONContent {
@@ -37,6 +51,7 @@ export interface UpdatePageRequest {
   title?: string;
   content?: JSONContent;
   icon?: string;
+  tag_ids?: string[];
 }
 
 export interface MovePageRequest {

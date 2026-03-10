@@ -146,6 +146,55 @@ func (s *FileService) DeleteAllPageFiles(ctx context.Context, userID uuid.UUID, 
 	return nil
 }
 
+// CopyPageFiles server-side copies all files from sourcePageID to targetPageID.
+// Returns a map of old file ID → new file ID for content URL rewriting.
+func (s *FileService) CopyPageFiles(ctx context.Context, userID uuid.UUID, sourcePageID, targetPageID uuid.UUID) (map[uuid.UUID]uuid.UUID, error) {
+	pageFiles, err := s.repo.GetByPageID(ctx, sourcePageID)
+	if err != nil {
+		return nil, fmt.Errorf("get source page files: %w", err)
+	}
+
+	idMap := make(map[uuid.UUID]uuid.UUID, len(pageFiles))
+	for _, f := range pageFiles {
+		newID := uuid.New()
+		newKey := fmt.Sprintf("pages/%s/%s", targetPageID.String(), newID.String()+getExt(f.S3Key))
+
+		if err := s.storage.Copy(ctx, f.S3Key, newKey); err != nil {
+			log.Printf("Warning: failed to copy S3 object %s: %v", f.S3Key, err)
+			continue
+		}
+
+		newFile := &model.File{
+			ID:          newID,
+			UserID:      userID,
+			PageID:      targetPageID,
+			Filename:    f.Filename,
+			ContentType: f.ContentType,
+			Size:        f.Size,
+			S3Key:       newKey,
+		}
+		if err := s.repo.Create(ctx, newFile); err != nil {
+			log.Printf("Warning: failed to insert copied file record: %v", err)
+			_ = s.storage.Delete(ctx, newKey)
+			continue
+		}
+		idMap[f.ID] = newID
+	}
+	return idMap, nil
+}
+
+func getExt(key string) string {
+	for i := len(key) - 1; i >= 0; i-- {
+		if key[i] == '.' {
+			return key[i:]
+		}
+		if key[i] == '/' {
+			break
+		}
+	}
+	return ""
+}
+
 var fileIDPattern = regexp.MustCompile(`/api/files/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})`)
 
 // extractFileIDs walks the JSON content and extracts all file UUIDs referenced

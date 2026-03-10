@@ -1,6 +1,6 @@
 import {create} from 'zustand';
 import {pagesApi} from '../api/pages';
-import type {JSONContent, Page, PageTreeNode, UpdatePageRequest} from '../types/page';
+import type {JSONContent, Page, PageTreeNode, TrashedPage, UpdatePageRequest} from '../types/page';
 
 interface PageState {
   tree: PageTreeNode[];
@@ -8,12 +8,18 @@ interface PageState {
   activePage: Page | null;
   isPageLoading: boolean;
   saveStatus: 'idle' | 'saving' | 'saved' | 'error';
+  trash: TrashedPage[];
+  isTrashLoading: boolean;
 
   fetchTree: () => Promise<void>;
   fetchPage: (id: string) => Promise<void>;
   createPage: (parentId?: string | null) => Promise<Page>;
   updatePage: (id: string, data: UpdatePageRequest) => Promise<void>;
   deletePage: (id: string) => Promise<void>;
+  duplicatePage: (id: string, deep?: boolean) => Promise<Page>;
+  fetchTrash: () => Promise<void>;
+  restorePage: (id: string) => Promise<void>;
+  permanentDeletePage: (id: string) => Promise<void>;
   setActivePage: (page: Page | null) => void;
   setSaveStatus: (status: 'idle' | 'saving' | 'saved' | 'error') => void;
   updateActivePageLocal: (title?: string, content?: JSONContent) => void;
@@ -25,6 +31,8 @@ export const usePageStore = create<PageState>((set, get) => ({
   activePage: null,
   isPageLoading: false,
   saveStatus: 'idle',
+  trash: [],
+  isTrashLoading: false,
 
   fetchTree: async () => {
     set({isTreeLoading: true});
@@ -59,7 +67,6 @@ export const usePageStore = create<PageState>((set, get) => ({
     try {
       await pagesApi.update(id, data);
       set({saveStatus: 'saved'});
-      // Refresh tree if title changed
       if (data.title !== undefined) {
         await get().fetchTree();
       }
@@ -80,6 +87,33 @@ export const usePageStore = create<PageState>((set, get) => ({
       set({activePage: null});
     }
     await get().fetchTree();
+  },
+
+  duplicatePage: async (id: string, deep = false) => {
+    const page = await pagesApi.duplicate(id, {deep});
+    await get().fetchTree();
+    return page;
+  },
+
+  fetchTrash: async () => {
+    set({isTrashLoading: true});
+    try {
+      const trash = await pagesApi.getTrash();
+      set({trash, isTrashLoading: false});
+    } catch {
+      set({isTrashLoading: false});
+    }
+  },
+
+  restorePage: async (id: string) => {
+    await pagesApi.restore(id);
+    set((state) => ({trash: state.trash.filter((p) => p.id !== id)}));
+    await get().fetchTree();
+  },
+
+  permanentDeletePage: async (id: string) => {
+    await pagesApi.permanentDelete(id);
+    set((state) => ({trash: state.trash.filter((p) => p.id !== id)}));
   },
 
   setActivePage: (page) => set({activePage: page}),

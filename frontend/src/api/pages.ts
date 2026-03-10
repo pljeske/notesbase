@@ -1,5 +1,5 @@
 import {request} from './client';
-import type {CreatePageRequest, MovePageRequest, Page, PageTreeNode, UpdatePageRequest,} from '../types/page';
+import type {CreatePageRequest, MovePageRequest, Page, PageTreeNode, TrashedPage, UpdatePageRequest,} from '../types/page';
 
 export const pagesApi = {
   getTree: () => request<PageTreeNode[]>('/api/pages'),
@@ -26,4 +26,18 @@ export const pagesApi = {
       method: 'PATCH',
       body: JSON.stringify(data),
     }),
+
+  restore: (id: string) =>
+    request<void>(`/api/pages/${id}/restore`, {method: 'POST'}),
+
+  duplicate: (id: string, data: {deep: boolean}) =>
+    request<Page>(`/api/pages/${id}/duplicate`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  getTrash: () => request<TrashedPage[]>('/api/trash'),
+
+  permanentDelete: (id: string) =>
+    request<void>(`/api/trash/${id}`, {method: 'DELETE'}),
 };
