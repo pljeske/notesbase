@@ -8,13 +8,13 @@ import (
 	"os/signal"
 	"syscall"
 
-	"notes-app/backend/internal/config"
-	"notes-app/backend/internal/database"
-	"notes-app/backend/internal/handler"
-	"notes-app/backend/internal/middleware"
-	"notes-app/backend/internal/repository"
-	"notes-app/backend/internal/service"
-	"notes-app/backend/internal/storage"
+	"notesbase/backend/internal/config"
+	"notesbase/backend/internal/database"
+	"notesbase/backend/internal/handler"
+	"notesbase/backend/internal/middleware"
+	"notesbase/backend/internal/repository"
+	"notesbase/backend/internal/service"
+	"notesbase/backend/internal/storage"
 
 	"github.com/gin-gonic/gin"
 )

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"notes-app/backend/internal/model"
-	"notes-app/backend/internal/repository"
+	"notesbase/backend/internal/model"
+	"notesbase/backend/internal/repository"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"

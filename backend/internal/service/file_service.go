@@ -9,9 +9,9 @@ import (
 	"path"
 	"regexp"
 
-	"notes-app/backend/internal/model"
-	"notes-app/backend/internal/repository"
-	"notes-app/backend/internal/storage"
+	"notesbase/backend/internal/model"
+	"notesbase/backend/internal/repository"
+	"notesbase/backend/internal/storage"
 
 	"github.com/google/uuid"
 )

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"notes-app/backend/internal/model"
+	"notesbase/backend/internal/model"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"

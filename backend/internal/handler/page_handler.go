@@ -3,9 +3,9 @@ package handler
 import (
 	"net/http"
 
-	"notes-app/backend/internal/middleware"
-	"notes-app/backend/internal/model"
-	"notes-app/backend/internal/service"
+	"notesbase/backend/internal/middleware"
+	"notesbase/backend/internal/model"
+	"notesbase/backend/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"

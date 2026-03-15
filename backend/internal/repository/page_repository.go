@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"notes-app/backend/internal/model"
+	"notesbase/backend/internal/model"
 
 	"github.com/google/uuid"
 )

@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 
-	"notes-app/backend/internal/model"
+	"notesbase/backend/internal/model"
 
 	"github.com/google/uuid"
 )

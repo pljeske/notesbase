@@ -3,8 +3,8 @@ package handler
 import (
 	"net/http"
 
-	"notes-app/backend/internal/model"
-	"notes-app/backend/internal/service"
+	"notesbase/backend/internal/model"
+	"notesbase/backend/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

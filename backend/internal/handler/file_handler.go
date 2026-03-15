@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"notes-app/backend/internal/middleware"
-	"notes-app/backend/internal/service"
+	"notesbase/backend/internal/middleware"
+	"notesbase/backend/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"

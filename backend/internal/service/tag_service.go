@@ -3,8 +3,8 @@ package service
 import (
 	"context"
 
-	"notes-app/backend/internal/model"
-	"notes-app/backend/internal/repository"
+	"notesbase/backend/internal/model"
+	"notesbase/backend/internal/repository"
 
 	"github.com/google/uuid"
 )

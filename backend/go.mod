@@ -1,4 +1,4 @@
-module notes-app/backend
+module notesbase/backend
 
 go 1.25.6
 

@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"notes-app/backend/internal/service"
+	"notesbase/backend/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"

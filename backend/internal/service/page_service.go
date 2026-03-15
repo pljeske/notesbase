@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	"notes-app/backend/internal/model"
-	"notes-app/backend/internal/repository"
+	"notesbase/backend/internal/model"
+	"notesbase/backend/internal/repository"
 
 	"github.com/google/uuid"
 )
