@@ -75,12 +75,14 @@ func (s *PageService) UpdatePage(ctx context.Context, userID uuid.UUID, id uuid.
 		return nil, nil
 	}
 
-	// Update tags if TagIDs is explicitly set (not nil)
-	if req.TagIDs != nil && s.tagRepo != nil {
-		if err := s.tagRepo.SetPageTags(ctx, id, req.TagIDs); err != nil {
-			log.Printf("Warning: failed to set page tags for page %s: %v", id, err)
+	if s.tagRepo != nil {
+		// Update tags if TagIDs is explicitly set (not nil)
+		if req.TagIDs != nil {
+			if err := s.tagRepo.SetPageTags(ctx, id, req.TagIDs); err != nil {
+				log.Printf("Warning: failed to set page tags for page %s: %v", id, err)
+			}
 		}
-		// Reload tags
+		// Always load tags so the response is complete regardless of what was updated
 		tags, err := s.tagRepo.GetByPageID(ctx, id)
 		if err == nil {
 			page.Tags = tags

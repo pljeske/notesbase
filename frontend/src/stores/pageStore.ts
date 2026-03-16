@@ -65,9 +65,13 @@ export const usePageStore = create<PageState>((set, get) => ({
   updatePage: async (id: string, data: UpdatePageRequest) => {
     set({saveStatus: 'saving'});
     try {
-      await pagesApi.update(id, data);
+      const updatedPage = await pagesApi.update(id, data);
+      const {activePage} = get();
+      if (activePage?.id === id) {
+        set({activePage: updatedPage});
+      }
       set({saveStatus: 'saved'});
-      if (data.title !== undefined) {
+      if (data.title !== undefined || data.icon !== undefined) {
         await get().fetchTree();
       }
       setTimeout(() => {
@@ -87,6 +91,7 @@ export const usePageStore = create<PageState>((set, get) => ({
       set({activePage: null});
     }
     await get().fetchTree();
+    await get().fetchTrash();
   },
 
   duplicatePage: async (id: string, deep = false) => {

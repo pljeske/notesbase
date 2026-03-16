@@ -1,6 +1,6 @@
 = notesbase
 
-Simple but scalable notes app
+Vibe coded simple but scalable notes app.
 
 == Roadmap
 
@@ -9,5 +9,5 @@ Simple but scalable notes app
 - rendering PDFs directly on the page
 - backups
 - drag & drop
-- immediately update content in frontend after changing e.g. tags & icons
 - colored icons
+- automatic pipeline build of images
