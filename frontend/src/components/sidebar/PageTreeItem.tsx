@@ -79,7 +79,7 @@ export function PageTreeItem({node, depth}: PageTreeItemProps) {
         )}
         <span className="flex items-center gap-1.5 truncate flex-1 min-w-0">
           <span className="shrink-0 text-gray-500">
-            <PageIcon icon={node.icon} size={14} weight="light"/>
+            <PageIcon icon={node.icon} color={node.icon_color} size={14} weight="light"/>
           </span>
           <span className="truncate">{node.title || 'Untitled'}</span>
         </span>

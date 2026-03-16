@@ -25,6 +25,20 @@ interface PageState {
   updateActivePageLocal: (title?: string, content?: JSONContent) => void;
 }
 
+function patchTreeNode(
+  nodes: PageTreeNode[],
+  id: string,
+  patch: Partial<PageTreeNode>,
+): PageTreeNode[] {
+  return nodes.map((node) => {
+    if (node.id === id) return {...node, ...patch};
+    if (node.children.length > 0) {
+      return {...node, children: patchTreeNode(node.children, id, patch)};
+    }
+    return node;
+  });
+}
+
 export const usePageStore = create<PageState>((set, get) => ({
   tree: [],
   isTreeLoading: false,
@@ -71,8 +85,15 @@ export const usePageStore = create<PageState>((set, get) => ({
         set({activePage: updatedPage});
       }
       set({saveStatus: 'saved'});
-      if (data.title !== undefined || data.icon !== undefined) {
-        await get().fetchTree();
+      if (data.title !== undefined || data.icon !== undefined || data.icon_color !== undefined) {
+        // Update the affected tree node in-place rather than re-fetching the whole tree
+        set((state) => ({
+          tree: patchTreeNode(state.tree, id, {
+            ...(data.title !== undefined && {title: data.title}),
+            ...(data.icon !== undefined && {icon: updatedPage.icon}),
+            ...(data.icon_color !== undefined && {icon_color: updatedPage.icon_color}),
+          }),
+        }));
       }
       setTimeout(() => {
         if (get().saveStatus === 'saved') {

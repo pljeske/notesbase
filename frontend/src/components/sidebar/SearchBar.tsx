@@ -113,7 +113,7 @@ export function SearchBar() {
                     }`}
                   >
                     <span className="shrink-0 text-gray-400">
-                      <PageIcon icon={r.icon} size={13} weight="light"/>
+                      <PageIcon icon={r.icon} color={r.icon_color} size={13} weight="light"/>
                     </span>
                     <span className="truncate text-gray-700">{r.title || 'Untitled'}</span>
                   </button>

@@ -1,0 +1,1 @@
+ALTER TABLE pages ADD COLUMN icon_color TEXT DEFAULT NULL;

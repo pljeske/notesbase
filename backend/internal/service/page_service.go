@@ -247,6 +247,7 @@ func buildTree(pages []model.Page, tagsByPage map[uuid.UUID][]model.Tag) []model
 			ParentID:  p.ParentID,
 			Title:     p.Title,
 			Icon:      p.Icon,
+			IconColor: p.IconColor,
 			Position:  p.Position,
 			Tags:      tags,
 			Children:  []model.PageTreeNode{},

@@ -23,7 +23,7 @@ func NewPostgresPageRepository(pool *pgxpool.Pool) *PostgresPageRepository {
 
 func (r *PostgresPageRepository) GetAll(ctx context.Context, userID uuid.UUID) ([]model.Page, error) {
 	rows, err := r.pool.Query(ctx,
-		`SELECT id, parent_id, title, icon, position, created_at, updated_at
+		`SELECT id, parent_id, title, icon, icon_color, position, created_at, updated_at
 		 FROM pages WHERE user_id = $1 AND deleted_at IS NULL ORDER BY position ASC`, userID)
 	if err != nil {
 		return nil, fmt.Errorf("query pages: %w", err)
@@ -33,7 +33,7 @@ func (r *PostgresPageRepository) GetAll(ctx context.Context, userID uuid.UUID) (
 	var pages []model.Page
 	for rows.Next() {
 		var p model.Page
-		if err := rows.Scan(&p.ID, &p.ParentID, &p.Title, &p.Icon, &p.Position, &p.CreatedAt, &p.UpdatedAt); err != nil {
+		if err := rows.Scan(&p.ID, &p.ParentID, &p.Title, &p.Icon, &p.IconColor, &p.Position, &p.CreatedAt, &p.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("scan page: %w", err)
 		}
 		pages = append(pages, p)
@@ -44,9 +44,9 @@ func (r *PostgresPageRepository) GetAll(ctx context.Context, userID uuid.UUID) (
 func (r *PostgresPageRepository) GetByID(ctx context.Context, userID uuid.UUID, id uuid.UUID) (*model.Page, error) {
 	var p model.Page
 	err := r.pool.QueryRow(ctx,
-		`SELECT id, parent_id, title, content, icon, position, created_at, updated_at
+		`SELECT id, parent_id, title, content, icon, icon_color, position, created_at, updated_at
 		 FROM pages WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL`, id, userID).
-		Scan(&p.ID, &p.ParentID, &p.Title, &p.Content, &p.Icon, &p.Position, &p.CreatedAt, &p.UpdatedAt)
+		Scan(&p.ID, &p.ParentID, &p.Title, &p.Content, &p.Icon, &p.IconColor, &p.Position, &p.CreatedAt, &p.UpdatedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, nil
@@ -66,9 +66,9 @@ func (r *PostgresPageRepository) Create(ctx context.Context, userID uuid.UUID, r
 	err := r.pool.QueryRow(ctx,
 		`INSERT INTO pages (user_id, parent_id, title, position)
 		 VALUES ($1, $2, $3, (SELECT COALESCE(MAX(position), -1) + 1 FROM pages WHERE user_id = $1 AND parent_id IS NOT DISTINCT FROM $2 AND deleted_at IS NULL))
-		 RETURNING id, parent_id, title, content, icon, position, created_at, updated_at`,
+		 RETURNING id, parent_id, title, content, icon, icon_color, position, created_at, updated_at`,
 		userID, req.ParentID, title).
-		Scan(&p.ID, &p.ParentID, &p.Title, &p.Content, &p.Icon, &p.Position, &p.CreatedAt, &p.UpdatedAt)
+		Scan(&p.ID, &p.ParentID, &p.Title, &p.Content, &p.Icon, &p.IconColor, &p.Position, &p.CreatedAt, &p.UpdatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("insert page: %w", err)
 	}
@@ -83,9 +83,9 @@ func (r *PostgresPageRepository) CreateWithID(ctx context.Context, userID uuid.U
 	err := r.pool.QueryRow(ctx,
 		`INSERT INTO pages (id, user_id, parent_id, title, content, icon, position)
 		 VALUES ($1, $2, $3, $4, $5, $6, (SELECT COALESCE(MAX(position), -1) + 1 FROM pages WHERE user_id = $2 AND parent_id IS NOT DISTINCT FROM $3 AND deleted_at IS NULL))
-		 RETURNING id, parent_id, title, content, icon, position, created_at, updated_at`,
+		 RETURNING id, parent_id, title, content, icon, icon_color, position, created_at, updated_at`,
 		id, userID, parentID, title, content, icon).
-		Scan(&p.ID, &p.ParentID, &p.Title, &p.Content, &p.Icon, &p.Position, &p.CreatedAt, &p.UpdatedAt)
+		Scan(&p.ID, &p.ParentID, &p.Title, &p.Content, &p.Icon, &p.IconColor, &p.Position, &p.CreatedAt, &p.UpdatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("insert page with id: %w", err)
 	}
@@ -113,6 +113,11 @@ func (r *PostgresPageRepository) Update(ctx context.Context, userID uuid.UUID, i
 		args = append(args, *req.Icon)
 		argIdx++
 	}
+	if req.IconColor != nil {
+		setClauses += fmt.Sprintf("icon_color = $%d, ", argIdx)
+		args = append(args, *req.IconColor)
+		argIdx++
+	}
 
 	if setClauses == "" {
 		return r.GetByID(ctx, userID, id)
@@ -122,13 +127,13 @@ func (r *PostgresPageRepository) Update(ctx context.Context, userID uuid.UUID, i
 
 	query := fmt.Sprintf(
 		`UPDATE pages SET %s WHERE id = $%d AND user_id = $%d AND deleted_at IS NULL
-		 RETURNING id, parent_id, title, content, icon, position, created_at, updated_at`,
+		 RETURNING id, parent_id, title, content, icon, icon_color, position, created_at, updated_at`,
 		setClauses, argIdx, argIdx+1)
 	args = append(args, id, userID)
 
 	var p model.Page
 	err := r.pool.QueryRow(ctx, query, args...).
-		Scan(&p.ID, &p.ParentID, &p.Title, &p.Content, &p.Icon, &p.Position, &p.CreatedAt, &p.UpdatedAt)
+		Scan(&p.ID, &p.ParentID, &p.Title, &p.Content, &p.Icon, &p.IconColor, &p.Position, &p.CreatedAt, &p.UpdatedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, nil
@@ -170,7 +175,7 @@ func (r *PostgresPageRepository) ListTrashed(ctx context.Context, userID uuid.UU
 	_, _ = r.PurgeExpired(ctx, userID, time.Now().AddDate(0, 0, -30))
 
 	rows, err := r.pool.Query(ctx,
-		`SELECT id, title, icon, deleted_at
+		`SELECT id, title, icon, icon_color, deleted_at
 		 FROM pages WHERE user_id = $1 AND deleted_at IS NOT NULL
 		 ORDER BY deleted_at DESC`, userID)
 	if err != nil {
@@ -181,7 +186,7 @@ func (r *PostgresPageRepository) ListTrashed(ctx context.Context, userID uuid.UU
 	var pages []model.TrashedPage
 	for rows.Next() {
 		var p model.TrashedPage
-		if err := rows.Scan(&p.ID, &p.Title, &p.Icon, &p.DeletedAt); err != nil {
+		if err := rows.Scan(&p.ID, &p.Title, &p.Icon, &p.IconColor, &p.DeletedAt); err != nil {
 			return nil, fmt.Errorf("scan trashed page: %w", err)
 		}
 		pages = append(pages, p)
@@ -312,7 +317,7 @@ func (r *PostgresPageRepository) Move(ctx context.Context, userID uuid.UUID, id 
 
 func (r *PostgresPageRepository) Search(ctx context.Context, userID uuid.UUID, query string) ([]model.SearchResult, error) {
 	rows, err := r.pool.Query(ctx,
-		`SELECT id, title, icon
+		`SELECT id, title, icon, icon_color
 		 FROM pages
 		 WHERE user_id = $1
 		   AND deleted_at IS NULL
@@ -336,7 +341,7 @@ func (r *PostgresPageRepository) Search(ctx context.Context, userID uuid.UUID, q
 	var results []model.SearchResult
 	for rows.Next() {
 		var sr model.SearchResult
-		if err := rows.Scan(&sr.ID, &sr.Title, &sr.Icon); err != nil {
+		if err := rows.Scan(&sr.ID, &sr.Title, &sr.Icon, &sr.IconColor); err != nil {
 			return nil, fmt.Errorf("scan search result: %w", err)
 		}
 		results = append(results, sr)

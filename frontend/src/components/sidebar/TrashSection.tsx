@@ -51,7 +51,7 @@ export function TrashSection() {
               >
                 <span className="flex items-center gap-1.5 truncate flex-1 min-w-0">
                   <span className="shrink-0 text-gray-500">
-                    <PageIcon icon={page.icon} size={14} weight="light"/>
+                    <PageIcon icon={page.icon} color={page.icon_color} size={14} weight="light"/>
                   </span>
                   <span className="truncate">{page.title || 'Untitled'}</span>
                 </span>

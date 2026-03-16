@@ -236,19 +236,21 @@ export const ICON_MAP: Record<string, Icon> = Object.fromEntries(
 
 interface PageIconProps {
   icon: string | null;
+  color?: string | null;
   size?: number;
   weight?: 'thin' | 'light' | 'regular' | 'bold' | 'fill';
   className?: string;
 }
 
-export function PageIcon({icon, size = 16, weight = 'light', className}: PageIconProps) {
+export function PageIcon({icon, color, size = 16, weight = 'light', className}: PageIconProps) {
+  const style = color ? {color} : undefined;
   if (!icon) {
     const DefaultIcon = Note;
-    return <DefaultIcon size={size} weight={weight} className={className}/>;
+    return <DefaultIcon size={size} weight={weight} className={className} style={style}/>;
   }
   const IconComponent = ICON_MAP[icon];
   if (IconComponent) {
-    return <IconComponent size={size} weight={weight} className={className}/>;
+    return <IconComponent size={size} weight={weight} className={className} style={style}/>;
   }
   // Legacy emoji fallback
   return (

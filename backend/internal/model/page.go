@@ -14,6 +14,7 @@ type Page struct {
 	Content   json.RawMessage `json:"content"`
 	Position  int             `json:"position"`
 	Icon      *string         `json:"icon"`
+	IconColor *string         `json:"icon_color"`
 	Tags      []Tag           `json:"tags"`
 	CreatedAt time.Time       `json:"created_at"`
 	UpdatedAt time.Time       `json:"updated_at"`
@@ -25,6 +26,7 @@ type PageTreeNode struct {
 	ParentID  *uuid.UUID     `json:"parent_id"`
 	Title     string         `json:"title"`
 	Icon      *string        `json:"icon"`
+	IconColor *string        `json:"icon_color"`
 	Position  int            `json:"position"`
 	Tags      []Tag          `json:"tags"`
 	Children  []PageTreeNode `json:"children"`
@@ -37,6 +39,7 @@ type TrashedPage struct {
 	ID        uuid.UUID  `json:"id"`
 	Title     string     `json:"title"`
 	Icon      *string    `json:"icon"`
+	IconColor *string    `json:"icon_color"`
 	DeletedAt *time.Time `json:"deleted_at"`
 }
 
@@ -46,10 +49,11 @@ type CreatePageRequest struct {
 }
 
 type UpdatePageRequest struct {
-	Title   *string          `json:"title,omitempty"`
-	Content *json.RawMessage `json:"content,omitempty"`
-	Icon    *string          `json:"icon,omitempty"`
-	TagIDs  []uuid.UUID      `json:"tag_ids,omitempty"`
+	Title     *string          `json:"title,omitempty"`
+	Content   *json.RawMessage `json:"content,omitempty"`
+	Icon      *string          `json:"icon,omitempty"`
+	IconColor *string          `json:"icon_color,omitempty"`
+	TagIDs    []uuid.UUID      `json:"tag_ids,omitempty"`
 }
 
 type MovePageRequest struct {
@@ -62,7 +66,8 @@ type DuplicatePageRequest struct {
 }
 
 type SearchResult struct {
-	ID    uuid.UUID `json:"id"`
-	Title string    `json:"title"`
-	Icon  *string   `json:"icon"`
+	ID        uuid.UUID `json:"id"`
+	Title     string    `json:"title"`
+	Icon      *string   `json:"icon"`
+	IconColor *string   `json:"icon_color"`
 }

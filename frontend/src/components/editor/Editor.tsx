@@ -29,10 +29,12 @@ interface EditorProps {
   onTitleChange: (title: string) => void;
   pageId: string;
   pageIcon: string | null;
+  pageIconColor: string | null;
   onIconChange: (icon: string | null) => void;
+  onIconColorChange: (color: string | null) => void;
 }
 
-export function Editor({content, onUpdate, pageTitle, onTitleChange, pageId, pageIcon, onIconChange}: EditorProps) {
+export function Editor({content, onUpdate, pageTitle, onTitleChange, pageId, pageIcon, pageIconColor, onIconChange, onIconColorChange}: EditorProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const iconButtonRef = useRef<HTMLDivElement>(null);
   const editor = useEditor({
@@ -147,7 +149,7 @@ export function Editor({content, onUpdate, pageTitle, onTitleChange, pageId, pag
               className="p-1 -ml-1 rounded hover:bg-gray-100 transition-colors text-gray-700"
               title="Change icon"
             >
-              <PageIcon icon={pageIcon} size={48} weight="light"/>
+              <PageIcon icon={pageIcon} color={pageIconColor} size={48} weight="light"/>
             </button>
           ) : (
             <button
@@ -161,7 +163,9 @@ export function Editor({content, onUpdate, pageTitle, onTitleChange, pageId, pag
           {pickerOpen && (
             <IconPicker
               currentIcon={pageIcon}
+              currentColor={pageIconColor}
               onSelect={onIconChange}
+              onColorChange={onIconColorChange}
               onClose={() => setPickerOpen(false)}
             />
           )}

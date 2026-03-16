@@ -1,13 +1,30 @@
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {ICON_REGISTRY} from '../../utils/icons';
 
+const ICON_COLORS = [
+  {name: 'Gray',   value: '#6b7280'},
+  {name: 'Red',    value: '#ef4444'},
+  {name: 'Orange', value: '#f97316'},
+  {name: 'Amber',  value: '#f59e0b'},
+  {name: 'Yellow', value: '#eab308'},
+  {name: 'Green',  value: '#22c55e'},
+  {name: 'Teal',   value: '#14b8a6'},
+  {name: 'Blue',   value: '#3b82f6'},
+  {name: 'Indigo', value: '#6366f1'},
+  {name: 'Purple', value: '#a855f7'},
+  {name: 'Pink',   value: '#ec4899'},
+  {name: 'Rose',   value: '#f43f5e'},
+];
+
 interface IconPickerProps {
   currentIcon: string | null;
+  currentColor: string | null;
   onSelect: (icon: string | null) => void;
+  onColorChange: (color: string | null) => void;
   onClose: () => void;
 }
 
-export function IconPicker({currentIcon, onSelect, onClose}: IconPickerProps) {
+export function IconPicker({currentIcon, currentColor, onSelect, onColorChange, onClose}: IconPickerProps) {
   const [search, setSearch] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -60,7 +77,7 @@ export function IconPicker({currentIcon, onSelect, onClose}: IconPickerProps) {
       className="absolute z-50 top-full left-0 mt-1 w-80 bg-white border border-gray-200 rounded-lg shadow-lg flex flex-col"
       style={{maxHeight: '360px'}}
     >
-      <div className="p-2 border-b border-gray-100">
+      <div className="p-2 border-b border-gray-100 flex flex-col gap-2">
         <input
           ref={inputRef}
           type="text"
@@ -69,6 +86,26 @@ export function IconPicker({currentIcon, onSelect, onClose}: IconPickerProps) {
           placeholder="Search icons..."
           className="w-full text-sm px-2.5 py-1.5 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-gray-50"
         />
+        <div className="flex items-center gap-1">
+          <button
+            title="Default"
+            onClick={() => onColorChange(null)}
+            className={`w-5 h-5 rounded-full border-2 bg-gray-400 transition-transform hover:scale-110 ${
+              !currentColor ? 'border-gray-600 scale-110' : 'border-transparent'
+            }`}
+          />
+          {ICON_COLORS.map((c) => (
+            <button
+              key={c.value}
+              title={c.name}
+              onClick={() => onColorChange(c.value)}
+              className={`w-5 h-5 rounded-full border-2 transition-transform hover:scale-110 ${
+                currentColor === c.value ? 'border-gray-600 scale-110' : 'border-transparent'
+              }`}
+              style={{backgroundColor: c.value}}
+            />
+          ))}
+        </div>
       </div>
 
       <div className="overflow-y-auto flex-1 p-2">
@@ -97,7 +134,7 @@ export function IconPicker({currentIcon, onSelect, onClose}: IconPickerProps) {
                         currentIcon === entry.name ? 'bg-gray-100 ring-1 ring-gray-300' : ''
                       }`}
                     >
-                      <IconComp size={16} weight="light"/>
+                      <IconComp size={16} weight="light" style={currentColor ? {color: currentColor} : undefined}/>
                     </button>
                   );
                 })}

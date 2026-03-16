@@ -15,6 +15,7 @@ export function PageView() {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState<JSONContent | null>(null);
   const [icon, setIcon] = useState<string | null>(null);
+  const [iconColor, setIconColor] = useState<string | null>(null);
   const [initialized, setInitialized] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
 
@@ -30,6 +31,7 @@ export function PageView() {
       setTitle(activePage.title);
       setContent(activePage.content);
       setIcon(activePage.icon);
+      setIconColor(activePage.icon_color);
       setInitialized(true);
     }
   }, [activePage, pageId, initialized]);
@@ -45,9 +47,18 @@ export function PageView() {
   const handleIconChange = useCallback(
     async (newIcon: string | null) => {
       setIcon(newIcon);
+      if (!newIcon) setIconColor(null);
       if (!pageId) return;
-      // Send empty string to clear the icon (backend only updates when field is present)
-      await updatePage(pageId, {icon: newIcon ?? ''});
+      await updatePage(pageId, {icon: newIcon ?? '', ...(!newIcon && {icon_color: ''})});
+    },
+    [pageId, updatePage]
+  );
+
+  const handleIconColorChange = useCallback(
+    async (newColor: string | null) => {
+      setIconColor(newColor);
+      if (!pageId) return;
+      await updatePage(pageId, {icon_color: newColor ?? ''});
     },
     [pageId, updatePage]
   );
@@ -103,7 +114,9 @@ export function PageView() {
           onTitleChange={handleTitleChange}
           pageId={pageId!}
           pageIcon={icon}
+          pageIconColor={iconColor}
           onIconChange={handleIconChange}
+          onIconColorChange={handleIconColorChange}
         />
       </div>
     </div>
