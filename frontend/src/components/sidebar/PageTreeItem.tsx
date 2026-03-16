@@ -1,6 +1,7 @@
 import {useEffect, useRef, useState} from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
 import {usePageStore} from '../../stores/pageStore';
+import {PageIcon} from '../../utils/icons';
 import type {PageTreeNode} from '../../types/page';
 
 interface PageTreeItemProps {
@@ -76,8 +77,11 @@ export function PageTreeItem({node, depth}: PageTreeItemProps) {
         ) : (
           <span className="w-5 h-5 shrink-0"/>
         )}
-        <span className="truncate flex-1">
-          {node.icon || '\uD83D\uDCC4'} {node.title || 'Untitled'}
+        <span className="flex items-center gap-1.5 truncate flex-1 min-w-0">
+          <span className="shrink-0 text-gray-500">
+            <PageIcon icon={node.icon} size={14} weight="light"/>
+          </span>
+          <span className="truncate">{node.title || 'Untitled'}</span>
         </span>
         <div
           className="relative opacity-0 group-hover:opacity-100 shrink-0"

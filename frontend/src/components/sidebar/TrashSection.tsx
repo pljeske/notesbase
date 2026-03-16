@@ -1,5 +1,6 @@
 import {useState} from 'react';
 import {usePageStore} from '../../stores/pageStore';
+import {PageIcon} from '../../utils/icons';
 
 export function TrashSection() {
   const [isOpen, setIsOpen] = useState(false);
@@ -48,8 +49,11 @@ export function TrashSection() {
                 key={page.id}
                 className="flex items-center gap-1 py-1 px-2 rounded group text-sm text-gray-600 hover:bg-gray-100"
               >
-                <span className="truncate flex-1">
-                  {page.icon || '\uD83D\uDCC4'} {page.title || 'Untitled'}
+                <span className="flex items-center gap-1.5 truncate flex-1 min-w-0">
+                  <span className="shrink-0 text-gray-500">
+                    <PageIcon icon={page.icon} size={14} weight="light"/>
+                  </span>
+                  <span className="truncate">{page.title || 'Untitled'}</span>
                 </span>
                 <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 shrink-0">
                   <button

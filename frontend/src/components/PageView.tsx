@@ -12,6 +12,7 @@ export function PageView() {
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState<JSONContent | null>(null);
+  const [icon, setIcon] = useState<string | null>(null);
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
@@ -25,6 +26,7 @@ export function PageView() {
     if (activePage && activePage.id === pageId && !initialized) {
       setTitle(activePage.title);
       setContent(activePage.content);
+      setIcon(activePage.icon);
       setInitialized(true);
     }
   }, [activePage, pageId, initialized]);
@@ -36,6 +38,16 @@ export function PageView() {
       content: content ?? undefined,
     });
   }, [pageId, title, content, updatePage]);
+
+  const handleIconChange = useCallback(
+    async (newIcon: string | null) => {
+      setIcon(newIcon);
+      if (!pageId) return;
+      // Send empty string to clear the icon (backend only updates when field is present)
+      await updatePage(pageId, {icon: newIcon ?? ''});
+    },
+    [pageId, updatePage]
+  );
 
   const {debouncedSave} = useAutoSave(save, 1000);
 
@@ -79,6 +91,8 @@ export function PageView() {
           pageTitle={title}
           onTitleChange={handleTitleChange}
           pageId={pageId!}
+          pageIcon={icon}
+          onIconChange={handleIconChange}
         />
       </div>
     </div>

@@ -1,2 +1,13 @@
 = notesbase
+
 Simple but scalable notes app
+
+== Roadmap
+
+- export function for pages/content
+- encryption
+- rendering PDFs directly on the page
+- backups
+- drag & drop
+- immediately update content in frontend after changing e.g. tags & icons
+- colored icons

@@ -4,10 +4,12 @@ import Placeholder from '@tiptap/extension-placeholder';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import {createLowlight, common} from 'lowlight';
 import {AuthImage} from './AuthImage';
-import {useEffect} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {SlashCommand} from './SlashCommand';
 import {PdfBlock} from './PdfBlock';
 import {CodeBlockView} from './CodeBlockView';
+import {IconPicker} from './IconPicker';
+import {PageIcon} from '../../utils/icons';
 import type {JSONContent} from '../../types/page';
 import {uploadFile} from '../../api/upload';
 import 'highlight.js/styles/github-dark.css';
@@ -26,9 +28,13 @@ interface EditorProps {
   pageTitle: string;
   onTitleChange: (title: string) => void;
   pageId: string;
+  pageIcon: string | null;
+  onIconChange: (icon: string | null) => void;
 }
 
-export function Editor({content, onUpdate, pageTitle, onTitleChange, pageId}: EditorProps) {
+export function Editor({content, onUpdate, pageTitle, onTitleChange, pageId, pageIcon, onIconChange}: EditorProps) {
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const iconButtonRef = useRef<HTMLDivElement>(null);
   const editor = useEditor({
     extensions: [
       StarterKit.configure({codeBlock: false}),
@@ -133,6 +139,34 @@ export function Editor({content, onUpdate, pageTitle, onTitleChange, pageId}: Ed
 
   return (
     <div className="editor-wrapper max-w-3xl mx-auto py-12 px-8">
+      <div className="group mb-2">
+        <div ref={iconButtonRef} className="relative inline-block">
+          {pageIcon ? (
+            <button
+              onClick={() => setPickerOpen((o) => !o)}
+              className="p-1 -ml-1 rounded hover:bg-gray-100 transition-colors text-gray-700"
+              title="Change icon"
+            >
+              <PageIcon icon={pageIcon} size={48} weight="light"/>
+            </button>
+          ) : (
+            <button
+              onClick={() => setPickerOpen((o) => !o)}
+              className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 py-1 px-2 rounded hover:bg-gray-100"
+            >
+              <span>+</span>
+              <span>Add icon</span>
+            </button>
+          )}
+          {pickerOpen && (
+            <IconPicker
+              currentIcon={pageIcon}
+              onSelect={onIconChange}
+              onClose={() => setPickerOpen(false)}
+            />
+          )}
+        </div>
+      </div>
       <input
         className="text-4xl font-bold w-full outline-none border-none bg-transparent mb-4 text-gray-900 placeholder-gray-300"
         value={pageTitle}
