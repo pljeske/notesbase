@@ -7,12 +7,14 @@ import (
 )
 
 type User struct {
-	ID           uuid.UUID `json:"-"`
-	Email        string    `json:"-"`
-	PasswordHash string    `json:"-"`
-	Name         string    `json:"-"`
-	CreatedAt    time.Time `json:"-"`
-	UpdatedAt    time.Time `json:"-"`
+	ID           uuid.UUID  `json:"-"`
+	Email        string     `json:"-"`
+	PasswordHash string     `json:"-"`
+	Name         string     `json:"-"`
+	Role         string     `json:"-"`
+	DisabledAt   *time.Time `json:"-"`
+	CreatedAt    time.Time  `json:"-"`
+	UpdatedAt    time.Time  `json:"-"`
 }
 
 type RegisterRequest struct {
@@ -36,4 +38,27 @@ type UserInfo struct {
 	ID    uuid.UUID `json:"id"`
 	Email string    `json:"email"`
 	Name  string    `json:"name"`
+	Role  string    `json:"role"`
+}
+
+// AdminUserInfo is returned by admin endpoints — no content access.
+type AdminUserInfo struct {
+	ID        uuid.UUID `json:"id"`
+	Email     string    `json:"email"`
+	Name      string    `json:"name"`
+	Role      string    `json:"role"`
+	Disabled  bool      `json:"disabled"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+type UpdateRoleRequest struct {
+	Role string `json:"role" binding:"required"`
+}
+
+type SetDisabledRequest struct {
+	Disabled bool `json:"disabled"`
+}
+
+type UpdateSettingsRequest struct {
+	RegistrationEnabled bool `json:"registration_enabled"`
 }

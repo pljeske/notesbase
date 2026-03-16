@@ -4,26 +4,35 @@ import (
 	"net/http"
 
 	"notesbase/backend/internal/model"
+	"notesbase/backend/internal/repository"
 	"notesbase/backend/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
 
 type AuthHandler struct {
-	service              *service.AuthService
-	registrationDisabled bool
+	service      *service.AuthService
+	settingsRepo repository.SettingsRepository
 }
 
-func NewAuthHandler(s *service.AuthService, registrationDisabled bool) *AuthHandler {
-	return &AuthHandler{service: s, registrationDisabled: registrationDisabled}
+func NewAuthHandler(s *service.AuthService, settingsRepo repository.SettingsRepository) *AuthHandler {
+	return &AuthHandler{service: s, settingsRepo: settingsRepo}
+}
+
+func (h *AuthHandler) registrationEnabled(c *gin.Context) bool {
+	val, found, err := h.settingsRepo.Get(c.Request.Context(), "registration_enabled")
+	if err != nil || !found {
+		return true // default: allow registration
+	}
+	return val == "true"
 }
 
 func (h *AuthHandler) GetConfig(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"registration_enabled": !h.registrationDisabled})
+	c.JSON(http.StatusOK, gin.H{"registration_enabled": h.registrationEnabled(c)})
 }
 
 func (h *AuthHandler) Register(c *gin.Context) {
-	if h.registrationDisabled {
+	if !h.registrationEnabled(c) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "registration is disabled"})
 		return
 	}
@@ -36,7 +45,6 @@ func (h *AuthHandler) Register(c *gin.Context) {
 
 	resp, err := h.service.Register(c.Request.Context(), req)
 	if err != nil {
-		// Check for duplicate email
 		if err.Error() == "email already registered" {
 			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 			return
@@ -57,6 +65,10 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	resp, err := h.service.Login(c.Request.Context(), req)
 	if err != nil {
+		if err.Error() == "account disabled" {
+			c.JSON(http.StatusForbidden, gin.H{"error": "your account has been disabled"})
+			return
+		}
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid email or password"})
 		return
 	}

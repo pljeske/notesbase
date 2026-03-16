@@ -6,6 +6,7 @@ import {TagView} from './components/TagView';
 import {WelcomePage} from './components/WelcomePage';
 import {LoginPage} from './components/auth/LoginPage';
 import {RegisterPage} from './components/auth/RegisterPage';
+import {AdminPanel} from './components/admin/AdminPanel';
 import {useAuthStore} from './stores/authStore';
 
 function AuthGuard({children}: {children: React.ReactNode}) {
@@ -21,6 +22,13 @@ function GuestGuard({children}: {children: React.ReactNode}) {
   if (isAuthenticated) {
     return <Navigate to="/" replace/>;
   }
+  return <>{children}</>;
+}
+
+function AdminGuard({children}: {children: React.ReactNode}) {
+  const user = useAuthStore((s) => s.user);
+  if (!user) return <Navigate to="/login" replace/>;
+  if (user.role !== 'admin') return <Navigate to="/" replace/>;
   return <>{children}</>;
 }
 
@@ -43,6 +51,10 @@ function App() {
           <Route path="/" element={<WelcomePage/>}/>
           <Route path="/page/:pageId" element={<PageView/>}/>
           <Route path="/tag/:tagId" element={<TagView/>}/>
+          <Route
+            path="/admin"
+            element={<AdminGuard><AdminPanel/></AdminGuard>}
+          />
         </Route>
       </Routes>
     </BrowserRouter>

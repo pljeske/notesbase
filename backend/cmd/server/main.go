@@ -67,10 +67,19 @@ func main() {
 	tagHandler := handler.NewTagHandler(tagSvc, pageSvc)
 	healthHandler := handler.NewHealthHandler(pool)
 
-	// Auth layer
+	// Auth & settings layer
 	userRepo := repository.NewPostgresUserRepository(pool)
+	settingsRepo := repository.NewPostgresSettingsRepository(pool)
+
+	// Seed registration_enabled from env var (only if not yet set in DB).
+	seedRegistrationSetting(ctx, settingsRepo, cfg.RegistrationDisabled)
+
+	// Ensure at least one admin exists (promotes oldest user after migration).
+	ensureAdminExists(ctx, userRepo)
+
 	authSvc := service.NewAuthService(userRepo, cfg.JWTSecret, cfg.JWTAccessExpiry, cfg.JWTRefreshExpiry)
-	authHandler := handler.NewAuthHandler(authSvc, cfg.RegistrationDisabled)
+	authHandler := handler.NewAuthHandler(authSvc, settingsRepo)
+	adminHandler := handler.NewAdminHandler(userRepo, settingsRepo)
 	authMiddleware := middleware.Auth(authSvc)
 
 	// Router
@@ -112,6 +121,17 @@ func main() {
 		api.POST("/upload", fileHandler.Upload)
 		api.GET("/files/:id", fileHandler.GetFile)
 		api.DELETE("/files/:id", fileHandler.DeleteFile)
+
+		// Admin routes — require admin role
+		admin := api.Group("/admin")
+		admin.Use(middleware.RequireAdmin)
+		{
+			admin.GET("/users", adminHandler.ListUsers)
+			admin.PUT("/users/:id/role", adminHandler.UpdateUserRole)
+			admin.PUT("/users/:id/disabled", adminHandler.SetUserDisabled)
+			admin.GET("/settings", adminHandler.GetSettings)
+			admin.PUT("/settings", adminHandler.UpdateSettings)
+		}
 	}
 
 	// Start server
@@ -141,4 +161,48 @@ func main() {
 	}
 
 	log.Println("Server exited")
+}
+
+// seedRegistrationSetting sets registration_enabled in DB from the env var,
+// but only if the key hasn't been set yet (preserves admin overrides across restarts).
+func seedRegistrationSetting(ctx context.Context, repo repository.SettingsRepository, registrationDisabled bool) {
+	_, found, err := repo.Get(ctx, "registration_enabled")
+	if err != nil {
+		log.Printf("Warning: could not check registration setting: %v", err)
+		return
+	}
+	if found {
+		return // already set, don't overwrite
+	}
+	value := "true"
+	if registrationDisabled {
+		value = "false"
+	}
+	if err := repo.Set(ctx, "registration_enabled", value); err != nil {
+		log.Printf("Warning: could not seed registration setting: %v", err)
+	}
+}
+
+// ensureAdminExists promotes the oldest user to admin if no admin currently exists.
+// This handles the migration case where existing users have role='user'.
+func ensureAdminExists(ctx context.Context, repo repository.UserRepository) {
+	users, err := repo.ListAll(ctx)
+	if err != nil {
+		log.Printf("Warning: could not check for admins: %v", err)
+		return
+	}
+	for _, u := range users {
+		if u.Role == "admin" {
+			return
+		}
+	}
+	if len(users) == 0 {
+		return
+	}
+	// Promote the oldest user.
+	if err := repo.UpdateRole(ctx, users[0].ID, "admin"); err != nil {
+		log.Printf("Warning: could not promote user to admin: %v", err)
+		return
+	}
+	log.Printf("Promoted user %s (%s) to admin", users[0].Name, users[0].Email)
 }

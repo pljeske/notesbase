@@ -30,7 +30,6 @@ func NewAuthService(repo repository.UserRepository, secret string, accessExpiry,
 }
 
 func (s *AuthService) Register(ctx context.Context, req model.RegisterRequest) (*model.AuthResponse, error) {
-	// Check if user already exists
 	existing, err := s.repo.GetByEmail(ctx, req.Email)
 	if err != nil {
 		return nil, fmt.Errorf("check existing user: %w", err)
@@ -39,24 +38,33 @@ func (s *AuthService) Register(ctx context.Context, req model.RegisterRequest) (
 		return nil, fmt.Errorf("email already registered")
 	}
 
-	// Hash password
 	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, fmt.Errorf("hash password: %w", err)
+	}
+
+	// First user to register becomes admin.
+	role := "user"
+	count, err := s.repo.Count(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("count users: %w", err)
+	}
+	if count == 0 {
+		role = "admin"
 	}
 
 	user := &model.User{
 		Email:        req.Email,
 		PasswordHash: string(hash),
 		Name:         req.Name,
+		Role:         role,
 	}
 
 	if err := s.repo.Create(ctx, user); err != nil {
 		return nil, fmt.Errorf("create user: %w", err)
 	}
 
-	// Generate tokens
-	accessToken, refreshToken, err := s.generateTokenPair(user.ID)
+	accessToken, refreshToken, err := s.generateTokenPair(user.ID, user.Role)
 	if err != nil {
 		return nil, err
 	}
@@ -68,6 +76,7 @@ func (s *AuthService) Register(ctx context.Context, req model.RegisterRequest) (
 			ID:    user.ID,
 			Email: user.Email,
 			Name:  user.Name,
+			Role:  user.Role,
 		},
 	}, nil
 }
@@ -85,7 +94,11 @@ func (s *AuthService) Login(ctx context.Context, req model.LoginRequest) (*model
 		return nil, fmt.Errorf("invalid email or password")
 	}
 
-	accessToken, refreshToken, err := s.generateTokenPair(user.ID)
+	if user.DisabledAt != nil {
+		return nil, fmt.Errorf("account disabled")
+	}
+
+	accessToken, refreshToken, err := s.generateTokenPair(user.ID, user.Role)
 	if err != nil {
 		return nil, err
 	}
@@ -97,12 +110,13 @@ func (s *AuthService) Login(ctx context.Context, req model.LoginRequest) (*model
 			ID:    user.ID,
 			Email: user.Email,
 			Name:  user.Name,
+			Role:  user.Role,
 		},
 	}, nil
 }
 
 func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*model.AuthResponse, error) {
-	userID, tokenType, err := s.parseToken(refreshToken)
+	userID, tokenType, _, err := s.parseToken(refreshToken)
 	if err != nil {
 		return nil, fmt.Errorf("invalid refresh token: %w", err)
 	}
@@ -117,8 +131,11 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*m
 	if user == nil {
 		return nil, fmt.Errorf("user not found")
 	}
+	if user.DisabledAt != nil {
+		return nil, fmt.Errorf("account disabled")
+	}
 
-	accessToken, newRefreshToken, err := s.generateTokenPair(user.ID)
+	accessToken, newRefreshToken, err := s.generateTokenPair(user.ID, user.Role)
 	if err != nil {
 		return nil, err
 	}
@@ -130,28 +147,29 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*m
 			ID:    user.ID,
 			Email: user.Email,
 			Name:  user.Name,
+			Role:  user.Role,
 		},
 	}, nil
 }
 
-func (s *AuthService) ValidateToken(tokenStr string) (uuid.UUID, error) {
-	userID, tokenType, err := s.parseToken(tokenStr)
+func (s *AuthService) ValidateToken(tokenStr string) (uuid.UUID, string, error) {
+	userID, tokenType, role, err := s.parseToken(tokenStr)
 	if err != nil {
-		return uuid.Nil, err
+		return uuid.Nil, "", err
 	}
 	if tokenType != "access" {
-		return uuid.Nil, fmt.Errorf("invalid token type")
+		return uuid.Nil, "", fmt.Errorf("invalid token type")
 	}
-	return userID, nil
+	return userID, role, nil
 }
 
-func (s *AuthService) generateTokenPair(userID uuid.UUID) (string, string, error) {
+func (s *AuthService) generateTokenPair(userID uuid.UUID, role string) (string, string, error) {
 	now := time.Now()
 
-	// Access token
 	accessClaims := jwt.MapClaims{
 		"sub":  userID.String(),
 		"type": "access",
+		"role": role,
 		"iat":  now.Unix(),
 		"exp":  now.Add(s.accessExpiry).Unix(),
 	}
@@ -161,7 +179,6 @@ func (s *AuthService) generateTokenPair(userID uuid.UUID) (string, string, error
 		return "", "", fmt.Errorf("sign access token: %w", err)
 	}
 
-	// Refresh token
 	refreshClaims := jwt.MapClaims{
 		"sub":  userID.String(),
 		"type": "refresh",
@@ -177,7 +194,7 @@ func (s *AuthService) generateTokenPair(userID uuid.UUID) (string, string, error
 	return accessStr, refreshStr, nil
 }
 
-func (s *AuthService) parseToken(tokenStr string) (uuid.UUID, string, error) {
+func (s *AuthService) parseToken(tokenStr string) (uuid.UUID, string, string, error) {
 	token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
@@ -185,24 +202,25 @@ func (s *AuthService) parseToken(tokenStr string) (uuid.UUID, string, error) {
 		return s.jwtSecret, nil
 	})
 	if err != nil {
-		return uuid.Nil, "", err
+		return uuid.Nil, "", "", err
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok || !token.Valid {
-		return uuid.Nil, "", fmt.Errorf("invalid token claims")
+		return uuid.Nil, "", "", fmt.Errorf("invalid token claims")
 	}
 
 	sub, ok := claims["sub"].(string)
 	if !ok {
-		return uuid.Nil, "", fmt.Errorf("missing sub claim")
+		return uuid.Nil, "", "", fmt.Errorf("missing sub claim")
 	}
 	userID, err := uuid.Parse(sub)
 	if err != nil {
-		return uuid.Nil, "", fmt.Errorf("invalid user id in token")
+		return uuid.Nil, "", "", fmt.Errorf("invalid user id in token")
 	}
 
 	tokenType, _ := claims["type"].(string)
+	role, _ := claims["role"].(string)
 
-	return userID, tokenType, nil
+	return userID, tokenType, role, nil
 }

@@ -1,4 +1,4 @@
-import {Outlet} from 'react-router-dom';
+import {Link, Outlet} from 'react-router-dom';
 import {Sidebar} from '../sidebar/Sidebar';
 import {usePageStore} from '../../stores/pageStore';
 import {useAuthStore} from '../../stores/authStore';
@@ -27,6 +27,14 @@ export function AppLayout() {
           <div className="flex items-center gap-3">
             {user && (
               <span className="text-xs text-gray-500">{user.name}</span>
+            )}
+            {user?.role === 'admin' && (
+              <Link
+                to="/admin"
+                className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                Admin
+              </Link>
             )}
             <button
               onClick={logout}

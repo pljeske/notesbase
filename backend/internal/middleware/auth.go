@@ -10,7 +10,10 @@ import (
 	"github.com/google/uuid"
 )
 
-const userIDKey = "userID"
+const (
+	userIDKey   = "userID"
+	userRoleKey = "userRole"
+)
 
 func Auth(authSvc *service.AuthService) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -26,15 +29,24 @@ func Auth(authSvc *service.AuthService) gin.HandlerFunc {
 			return
 		}
 
-		userID, err := authSvc.ValidateToken(parts[1])
+		userID, role, err := authSvc.ValidateToken(parts[1])
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired token"})
 			return
 		}
 
 		c.Set(userIDKey, userID)
+		c.Set(userRoleKey, role)
 		c.Next()
 	}
+}
+
+func RequireAdmin(c *gin.Context) {
+	if GetUserRole(c) != "admin" {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "admin access required"})
+		return
+	}
+	c.Next()
 }
 
 func GetUserID(c *gin.Context) uuid.UUID {
@@ -47,4 +59,10 @@ func GetUserID(c *gin.Context) uuid.UUID {
 		return uuid.Nil
 	}
 	return userID
+}
+
+func GetUserRole(c *gin.Context) string {
+	val, _ := c.Get(userRoleKey)
+	role, _ := val.(string)
+	return role
 }
