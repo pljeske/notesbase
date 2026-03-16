@@ -5,6 +5,7 @@ import {PageTreeItem} from './PageTreeItem';
 import {TagSection} from './TagSection';
 import {TrashSection} from './TrashSection';
 import {ExportDialog} from '../ExportDialog';
+import {SearchBar} from './SearchBar';
 import {DownloadSimple} from '@phosphor-icons/react';
 
 export function Sidebar() {
@@ -45,6 +46,7 @@ export function Sidebar() {
         </div>
       </div>
       {exportOpen && <ExportDialog mode="all" onClose={() => setExportOpen(false)}/>}
+      <SearchBar/>
       <nav className="flex-1 overflow-y-auto py-2 px-2 flex flex-col">
         <div className="flex-1">
           {isTreeLoading ? (

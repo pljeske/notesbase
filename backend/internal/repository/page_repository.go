@@ -23,4 +23,5 @@ type PageRepository interface {
 	HardDelete(ctx context.Context, userID uuid.UUID, id uuid.UUID) error
 	PurgeExpired(ctx context.Context, userID uuid.UUID, before time.Time) ([]uuid.UUID, error)
 	GetDescendants(ctx context.Context, userID uuid.UUID, id uuid.UUID) ([]model.Page, error)
+	Search(ctx context.Context, userID uuid.UUID, query string) ([]model.SearchResult, error)
 }

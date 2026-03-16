@@ -4,13 +4,11 @@ Vibe coded simple but scalable notes app.
 
 == Roadmap
 
-- export function for pages/content
 - encryption
 - rendering PDFs directly on the page
 - backups
 - drag & drop
 - colored icons
 - automatic pipeline build of images
-- full text search
 - mcp-server for asking knowledgebase questions
 

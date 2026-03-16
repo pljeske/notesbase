@@ -101,6 +101,7 @@ func main() {
 	api.Use(authMiddleware)
 	{
 		api.GET("/pages", pageHandler.ListPages)
+		api.GET("/pages/search", pageHandler.SearchPages)
 		api.GET("/pages/:id", pageHandler.GetPage)
 		api.POST("/pages", pageHandler.CreatePage)
 		api.PUT("/pages/:id", pageHandler.UpdatePage)

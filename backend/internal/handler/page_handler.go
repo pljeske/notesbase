@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 
 	"notesbase/backend/internal/middleware"
 	"notesbase/backend/internal/model"
@@ -17,6 +18,22 @@ type PageHandler struct {
 
 func NewPageHandler(s *service.PageService) *PageHandler {
 	return &PageHandler{service: s}
+}
+
+func (h *PageHandler) SearchPages(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	query := strings.TrimSpace(c.Query("q"))
+	if query == "" {
+		c.JSON(http.StatusOK, []model.SearchResult{})
+		return
+	}
+
+	results, err := h.service.SearchPages(c.Request.Context(), userID, query)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, results)
 }
 
 func (h *PageHandler) ListPages(c *gin.Context) {

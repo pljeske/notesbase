@@ -104,6 +104,10 @@ func (s *PageService) DeletePage(ctx context.Context, userID uuid.UUID, id uuid.
 	return s.repo.SoftDelete(ctx, userID, id)
 }
 
+func (s *PageService) SearchPages(ctx context.Context, userID uuid.UUID, query string) ([]model.SearchResult, error) {
+	return s.repo.Search(ctx, userID, query)
+}
+
 func (s *PageService) MovePage(ctx context.Context, userID uuid.UUID, id uuid.UUID, req model.MovePageRequest) error {
 	return s.repo.Move(ctx, userID, id, req)
 }

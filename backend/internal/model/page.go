@@ -60,3 +60,9 @@ type MovePageRequest struct {
 type DuplicatePageRequest struct {
 	Deep bool `json:"deep"`
 }
+
+type SearchResult struct {
+	ID    uuid.UUID `json:"id"`
+	Title string    `json:"title"`
+	Icon  *string   `json:"icon"`
+}

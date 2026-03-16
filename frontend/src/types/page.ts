@@ -42,6 +42,12 @@ export interface JSONContent {
   text?: string;
 }
 
+export interface SearchResult {
+  id: string;
+  title: string;
+  icon: string | null;
+}
+
 export interface CreatePageRequest {
   parent_id?: string | null;
   title?: string;

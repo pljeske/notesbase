@@ -309,3 +309,40 @@ func (r *PostgresPageRepository) Move(ctx context.Context, userID uuid.UUID, id 
 
 	return tx.Commit(ctx)
 }
+
+func (r *PostgresPageRepository) Search(ctx context.Context, userID uuid.UUID, query string) ([]model.SearchResult, error) {
+	rows, err := r.pool.Query(ctx,
+		`SELECT id, title, icon
+		 FROM pages
+		 WHERE user_id = $1
+		   AND deleted_at IS NULL
+		   AND (
+		     title ILIKE '%' || $2 || '%'
+		     OR (
+		       length($2) >= 3
+		       AND jsonb_to_tsvector('english', content, '["string"]') @@ plainto_tsquery('english', $2)
+		     )
+		   )
+		 ORDER BY
+		   CASE WHEN title ILIKE '%' || $2 || '%' THEN 0 ELSE 1 END,
+		   updated_at DESC
+		 LIMIT 50`,
+		userID, query)
+	if err != nil {
+		return nil, fmt.Errorf("search pages: %w", err)
+	}
+	defer rows.Close()
+
+	var results []model.SearchResult
+	for rows.Next() {
+		var sr model.SearchResult
+		if err := rows.Scan(&sr.ID, &sr.Title, &sr.Icon); err != nil {
+			return nil, fmt.Errorf("scan search result: %w", err)
+		}
+		results = append(results, sr)
+	}
+	if results == nil {
+		results = []model.SearchResult{}
+	}
+	return results, rows.Err()
+}

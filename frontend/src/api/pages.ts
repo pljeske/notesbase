@@ -1,5 +1,5 @@
 import {request} from './client';
-import type {CreatePageRequest, MovePageRequest, Page, PageTreeNode, TrashedPage, UpdatePageRequest,} from '../types/page';
+import type {CreatePageRequest, MovePageRequest, Page, PageTreeNode, SearchResult, TrashedPage, UpdatePageRequest,} from '../types/page';
 
 export const pagesApi = {
   getTree: () => request<PageTreeNode[]>('/api/pages'),
@@ -35,6 +35,9 @@ export const pagesApi = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+
+  search: (query: string) =>
+    request<SearchResult[]>(`/api/pages/search?q=${encodeURIComponent(query)}`),
 
   getTrash: () => request<TrashedPage[]>('/api/trash'),
 
