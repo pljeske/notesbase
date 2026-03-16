@@ -1,13 +1,16 @@
-import {useEffect} from 'react';
+import {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {usePageStore} from '../../stores/pageStore';
 import {PageTreeItem} from './PageTreeItem';
 import {TagSection} from './TagSection';
 import {TrashSection} from './TrashSection';
+import {ExportDialog} from '../ExportDialog';
+import {DownloadSimple} from '@phosphor-icons/react';
 
 export function Sidebar() {
   const {tree, isTreeLoading, fetchTree, createPage} = usePageStore();
   const navigate = useNavigate();
+  const [exportOpen, setExportOpen] = useState(false);
 
   useEffect(() => {
     fetchTree();
@@ -24,14 +27,24 @@ export function Sidebar() {
         <h1 className="text-sm font-semibold text-gray-700 tracking-wide">
           notesbase
         </h1>
-        <button
-          onClick={handleCreatePage}
-          className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded"
-          title="New page"
-        >
-          +
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setExportOpen(true)}
+            className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded"
+            title="Export all pages"
+          >
+            <DownloadSimple size={14} weight="light"/>
+          </button>
+          <button
+            onClick={handleCreatePage}
+            className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded"
+            title="New page"
+          >
+            +
+          </button>
+        </div>
       </div>
+      {exportOpen && <ExportDialog mode="all" onClose={() => setExportOpen(false)}/>}
       <nav className="flex-1 overflow-y-auto py-2 px-2 flex flex-col">
         <div className="flex-1">
           {isTreeLoading ? (

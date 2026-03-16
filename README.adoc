@@ -11,3 +11,6 @@ Vibe coded simple but scalable notes app.
 - drag & drop
 - colored icons
 - automatic pipeline build of images
+- full text search
+- mcp-server for asking knowledgebase questions
+

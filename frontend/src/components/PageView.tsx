@@ -4,6 +4,8 @@ import {usePageStore} from '../stores/pageStore';
 import {useAutoSave} from '../hooks/useAutoSave';
 import {Editor} from './editor/Editor';
 import {TagPicker} from './editor/TagPicker';
+import {ExportDialog} from './ExportDialog';
+import {DownloadSimple} from '@phosphor-icons/react';
 import type {JSONContent} from '../types/page';
 
 export function PageView() {
@@ -14,6 +16,7 @@ export function PageView() {
   const [content, setContent] = useState<JSONContent | null>(null);
   const [icon, setIcon] = useState<string | null>(null);
   const [initialized, setInitialized] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
 
   useEffect(() => {
     if (pageId) {
@@ -77,12 +80,20 @@ export function PageView() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-8 pt-4 pb-2">
+      <div className="px-8 pt-4 pb-2 flex items-center justify-between">
         <TagPicker
           pageId={pageId!}
           selectedTags={activePage?.tags ?? []}
         />
+        <button
+          onClick={() => setExportOpen(true)}
+          className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-100 transition-colors"
+          title="Export page"
+        >
+          <DownloadSimple size={15} weight="light"/>
+        </button>
       </div>
+      {exportOpen && <ExportDialog mode="page" onClose={() => setExportOpen(false)}/>}
       <div className="flex-1 min-h-0">
         <Editor
           key={pageId}
