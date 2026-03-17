@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"sort"
@@ -184,23 +185,24 @@ func (s *PageService) DuplicatePage(ctx context.Context, userID uuid.UUID, id uu
 		// Rewrite file URLs in content
 		content := rewriteFileURLs(p.Content, idMap)
 
-		newPage, err := s.repo.CreateWithID(ctx, userID, newID, newParentID, title, content, p.Icon)
+		newPage, err := s.repo.CreateWithID(ctx, userID, newID, newParentID, title, content, p.Icon, p.IconColor)
 		if err != nil {
 			return nil, fmt.Errorf("duplicate page %s: %w", p.ID, err)
 		}
 
-		// Copy files for this page
+		// Copy files for this page and rewrite file ID references in content
 		if s.fileSvc != nil {
 			fileIDMap, err := s.fileSvc.CopyPageFiles(ctx, userID, p.ID, newID)
 			if err != nil {
 				log.Printf("Warning: failed to copy files for page %s: %v", p.ID, err)
 			}
-			// If we have a file ID map, rewrite content again with actual new file IDs
 			if len(fileIDMap) > 0 {
 				rewritten := rewriteFileIDsInContent(newPage.Content, fileIDMap)
-				if rewritten != nil {
-					// Update the page content with rewritten file IDs
-					_ = rewritten // content already has page-level rewriting; file IDs handled by CopyPageFiles returning correct keys
+				if len(rewritten) > 0 {
+					contentJSON := json.RawMessage(rewritten)
+					if _, err := s.repo.Update(ctx, userID, newID, model.UpdatePageRequest{Content: &contentJSON}); err != nil {
+						log.Printf("Warning: failed to update file references for duplicated page %s: %v", newID, err)
+					}
 				}
 			}
 		}

@@ -75,16 +75,16 @@ func (r *PostgresPageRepository) Create(ctx context.Context, userID uuid.UUID, r
 	return &p, nil
 }
 
-func (r *PostgresPageRepository) CreateWithID(ctx context.Context, userID uuid.UUID, id uuid.UUID, parentID *uuid.UUID, title string, content []byte, icon *string) (*model.Page, error) {
+func (r *PostgresPageRepository) CreateWithID(ctx context.Context, userID uuid.UUID, id uuid.UUID, parentID *uuid.UUID, title string, content []byte, icon *string, iconColor *string) (*model.Page, error) {
 	if title == "" {
 		title = "Untitled"
 	}
 	var p model.Page
 	err := r.pool.QueryRow(ctx,
-		`INSERT INTO pages (id, user_id, parent_id, title, content, icon, position)
-		 VALUES ($1, $2, $3, $4, $5, $6, (SELECT COALESCE(MAX(position), -1) + 1 FROM pages WHERE user_id = $2 AND parent_id IS NOT DISTINCT FROM $3 AND deleted_at IS NULL))
+		`INSERT INTO pages (id, user_id, parent_id, title, content, icon, icon_color, position)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, (SELECT COALESCE(MAX(position), -1) + 1 FROM pages WHERE user_id = $2 AND parent_id IS NOT DISTINCT FROM $3 AND deleted_at IS NULL))
 		 RETURNING id, parent_id, title, content, icon, icon_color, position, created_at, updated_at`,
-		id, userID, parentID, title, content, icon).
+		id, userID, parentID, title, content, icon, iconColor).
 		Scan(&p.ID, &p.ParentID, &p.Title, &p.Content, &p.Icon, &p.IconColor, &p.Position, &p.CreatedAt, &p.UpdatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("insert page with id: %w", err)
@@ -256,14 +256,14 @@ func (r *PostgresPageRepository) PurgeExpired(ctx context.Context, userID uuid.U
 func (r *PostgresPageRepository) GetDescendants(ctx context.Context, userID uuid.UUID, id uuid.UUID) ([]model.Page, error) {
 	rows, err := r.pool.Query(ctx,
 		`WITH RECURSIVE subtree AS (
-			SELECT id, parent_id, title, content, icon, position, created_at, updated_at, 0 AS depth
+			SELECT id, parent_id, title, content, icon, icon_color, position, created_at, updated_at, 0 AS depth
 			FROM pages WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
 			UNION ALL
-			SELECT p.id, p.parent_id, p.title, p.content, p.icon, p.position, p.created_at, p.updated_at, s.depth + 1
+			SELECT p.id, p.parent_id, p.title, p.content, p.icon, p.icon_color, p.position, p.created_at, p.updated_at, s.depth + 1
 			FROM pages p JOIN subtree s ON p.parent_id = s.id
 			WHERE p.deleted_at IS NULL
 		)
-		SELECT id, parent_id, title, content, icon, position, created_at, updated_at
+		SELECT id, parent_id, title, content, icon, icon_color, position, created_at, updated_at
 		FROM subtree ORDER BY depth ASC, position ASC`,
 		id, userID)
 	if err != nil {
@@ -274,7 +274,7 @@ func (r *PostgresPageRepository) GetDescendants(ctx context.Context, userID uuid
 	var pages []model.Page
 	for rows.Next() {
 		var p model.Page
-		if err := rows.Scan(&p.ID, &p.ParentID, &p.Title, &p.Content, &p.Icon, &p.Position, &p.CreatedAt, &p.UpdatedAt); err != nil {
+		if err := rows.Scan(&p.ID, &p.ParentID, &p.Title, &p.Content, &p.Icon, &p.IconColor, &p.Position, &p.CreatedAt, &p.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("scan descendant: %w", err)
 		}
 		pages = append(pages, p)
