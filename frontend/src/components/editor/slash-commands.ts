@@ -160,4 +160,37 @@ export const slashCommands: SlashCommandItem[] = [
       });
     },
   },
+  {
+    title: 'File',
+    description: 'Upload any file as a download',
+    icon: '\uD83D\uDCCE',
+    searchTerms: ['file', 'attachment', 'upload', 'download', 'zip', 'doc', 'docx', 'xlsx'],
+    command: ({editor, range}) => {
+      editor.chain().focus().deleteRange(range).run();
+
+      const pageId = usePageStore.getState().activePage?.id;
+      if (!pageId) return;
+
+      pickFile('').then(async (file) => {
+        if (!file) return;
+        try {
+          const result = await uploadFile(file, pageId);
+          editor
+            .chain()
+            .focus()
+            .insertContent({
+              type: 'fileBlock',
+              attrs: {
+                src: result.url,
+                filename: result.filename,
+                filesize: result.size,
+              },
+            })
+            .run();
+        } catch (err) {
+          console.error('File upload failed:', err);
+        }
+      });
+    },
+  },
 ];

@@ -16,15 +16,6 @@ import (
 	"github.com/google/uuid"
 )
 
-var allowedTypes = map[string]bool{
-	"image/jpeg":      true,
-	"image/png":       true,
-	"image/gif":       true,
-	"image/webp":      true,
-	"image/svg+xml":   true,
-	"application/pdf": true,
-}
-
 type FileService struct {
 	repo    repository.FileRepository
 	storage *storage.S3Client
@@ -35,9 +26,6 @@ func NewFileService(repo repository.FileRepository, s3 *storage.S3Client) *FileS
 }
 
 func (s *FileService) Upload(ctx context.Context, userID uuid.UUID, pageID uuid.UUID, filename string, contentType string, size int64, reader io.Reader) (*model.FileResponse, error) {
-	if !allowedTypes[contentType] {
-		return nil, fmt.Errorf("unsupported file type: %s", contentType)
-	}
 
 	ext := path.Ext(filename)
 	s3Key := fmt.Sprintf("pages/%s/%s%s", pageID.String(), uuid.New().String(), ext)

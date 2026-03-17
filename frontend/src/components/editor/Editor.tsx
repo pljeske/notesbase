@@ -7,6 +7,7 @@ import {AuthImage} from './AuthImage';
 import {useEffect, useRef, useState} from 'react';
 import {SlashCommand} from './SlashCommand';
 import {PdfBlock} from './PdfBlock';
+import {FileBlock} from './FileBlock';
 import {CodeBlockView} from './CodeBlockView';
 import {IconPicker} from './IconPicker';
 import {PageIcon} from '../../utils/icons';
@@ -46,6 +47,7 @@ export function Editor({content, onUpdate, pageTitle, onTitleChange, pageId, pag
       }),
       AuthImage,
       PdfBlock,
+      FileBlock,
       SlashCommand,
     ],
     content: content ?? undefined,
@@ -67,33 +69,30 @@ export function Editor({content, onUpdate, pageTitle, onTitleChange, pageId, pag
         for (const file of files) {
           const isImage = file.type.startsWith('image/');
           const isPdf = file.type === 'application/pdf';
-
-          if (!isImage && !isPdf) continue;
+          const insertPos = pos ?? view.state.doc.content.size;
 
           uploadFile(file, pageId)
             .then((result) => {
+              let node;
               if (isImage) {
-                const node = view.state.schema.nodes.image.create({
+                node = view.state.schema.nodes.image.create({
                   src: result.url,
                   alt: result.filename,
                 });
-                const transaction = view.state.tr.insert(
-                  pos ?? view.state.doc.content.size,
-                  node
-                );
-                view.dispatch(transaction);
               } else if (isPdf) {
-                const node = view.state.schema.nodes.pdfBlock.create({
+                node = view.state.schema.nodes.pdfBlock.create({
                   src: result.url,
                   filename: result.filename,
                   filesize: result.size,
                 });
-                const transaction = view.state.tr.insert(
-                  pos ?? view.state.doc.content.size,
-                  node
-                );
-                view.dispatch(transaction);
+              } else {
+                node = view.state.schema.nodes.fileBlock.create({
+                  src: result.url,
+                  filename: result.filename,
+                  filesize: result.size,
+                });
               }
+              view.dispatch(view.state.tr.insert(insertPos, node));
             })
             .catch((err) => {
               console.error('Upload failed:', err);
