@@ -4,6 +4,12 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag to build (e.g. v1.2.3)'
+        required: true
+        type: string
 
 env:
   REGISTRY: ghcr.io
@@ -12,6 +18,7 @@ env:
 jobs:
   release:
     name: Semantic Release
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -36,6 +43,7 @@ jobs:
   build-backend:
     name: Backend Image
     needs: release
+    if: always() && (needs.release.result == 'success' || needs.release.result == 'skipped')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -57,8 +65,9 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.OWNER }}/notesbase-backend
           tags: |
-            type=raw,value=latest
+            type=raw,value=latest,enable=${{ github.event_name == 'push' }}
             type=raw,value=v${{ needs.release.outputs.version }},enable=${{ needs.release.outputs.released == 'true' }}
+            type=raw,value=${{ github.event.inputs.version }},enable=${{ github.event_name == 'workflow_dispatch' }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -72,7 +81,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            VERSION=${{ needs.release.outputs.released == 'true' && format('v{0}', needs.release.outputs.version) || github.sha }}
+            VERSION=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || (needs.release.outputs.released == 'true' && format('v{0}', needs.release.outputs.version) || github.sha) }}
             COMMIT=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -80,6 +89,7 @@ jobs:
   build-frontend:
     name: Frontend Image
     needs: release
+    if: always() && (needs.release.result == 'success' || needs.release.result == 'skipped')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -101,8 +111,9 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.OWNER }}/notesbase-frontend
           tags: |
-            type=raw,value=latest
+            type=raw,value=latest,enable=${{ github.event_name == 'push' }}
             type=raw,value=v${{ needs.release.outputs.version }},enable=${{ needs.release.outputs.released == 'true' }}
+            type=raw,value=${{ github.event.inputs.version }},enable=${{ github.event_name == 'workflow_dispatch' }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -116,7 +127,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            VERSION=${{ needs.release.outputs.released == 'true' && format('v{0}', needs.release.outputs.version) || github.sha }}
+            VERSION=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || (needs.release.outputs.released == 'true' && format('v{0}', needs.release.outputs.version) || github.sha) }}
             COMMIT=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
