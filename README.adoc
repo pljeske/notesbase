@@ -6,9 +6,4 @@ Vibe coded simple but scalable notes app.
 
 - encryption
 - rendering PDFs directly on the page
-- backups
-- drag & drop
-- colored icons
-- automatic pipeline build of images
 - mcp-server for asking knowledgebase questions
-
