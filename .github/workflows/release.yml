@@ -66,7 +66,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.OWNER }}/notesbase-backend
           tags: |
             type=raw,value=latest,enable=${{ github.event_name == 'push' }}
-            type=raw,value=v${{ needs.release.outputs.version }},enable=${{ needs.release.outputs.released == 'true' }}
+            type=raw,value=v${{ needs.release.outputs.version }},enable=${{ needs.release.outputs.version != '' }}
             type=raw,value=${{ github.event.inputs.version }},enable=${{ github.event_name == 'workflow_dispatch' }}
 
       - name: Set up Docker Buildx
@@ -81,7 +81,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            VERSION=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || (needs.release.outputs.released == 'true' && format('v{0}', needs.release.outputs.version) || github.sha) }}
+            VERSION=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || (needs.release.outputs.version != '' && format('v{0}', needs.release.outputs.version) || github.sha) }}
             COMMIT=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -112,7 +112,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.OWNER }}/notesbase-frontend
           tags: |
             type=raw,value=latest,enable=${{ github.event_name == 'push' }}
-            type=raw,value=v${{ needs.release.outputs.version }},enable=${{ needs.release.outputs.released == 'true' }}
+            type=raw,value=v${{ needs.release.outputs.version }},enable=${{ needs.release.outputs.version != '' }}
             type=raw,value=${{ github.event.inputs.version }},enable=${{ github.event_name == 'workflow_dispatch' }}
 
       - name: Set up Docker Buildx
@@ -127,7 +127,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            VERSION=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || (needs.release.outputs.released == 'true' && format('v{0}', needs.release.outputs.version) || github.sha) }}
+            VERSION=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || (needs.release.outputs.version != '' && format('v{0}', needs.release.outputs.version) || github.sha) }}
             COMMIT=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -135,7 +135,7 @@ jobs:
   release-assets:
     name: Release Assets
     needs: release
-    if: needs.release.outputs.released == 'true'
+    if: needs.release.result == 'success' && needs.release.outputs.version != ''
     runs-on: ubuntu-latest
     permissions:
       contents: write
