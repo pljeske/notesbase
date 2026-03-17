@@ -193,7 +193,7 @@ func (r *PostgresTagRepository) SetPageTags(ctx context.Context, pageID uuid.UUI
 
 func (r *PostgresTagRepository) GetPagesByTag(ctx context.Context, userID uuid.UUID, tagID uuid.UUID) ([]model.Page, error) {
 	rows, err := r.pool.Query(ctx,
-		`SELECT p.id, p.parent_id, p.title, p.icon, p.position, p.created_at, p.updated_at
+		`SELECT p.id, p.parent_id, p.title, p.icon, p.icon_color, p.position, p.created_at, p.updated_at
 		 FROM pages p JOIN page_tags pt ON p.id = pt.page_id
 		 WHERE p.user_id = $1 AND pt.tag_id = $2 AND p.deleted_at IS NULL
 		 ORDER BY p.updated_at DESC`,
@@ -206,7 +206,7 @@ func (r *PostgresTagRepository) GetPagesByTag(ctx context.Context, userID uuid.U
 	var pages []model.Page
 	for rows.Next() {
 		var p model.Page
-		if err := rows.Scan(&p.ID, &p.ParentID, &p.Title, &p.Icon, &p.Position, &p.CreatedAt, &p.UpdatedAt); err != nil {
+		if err := rows.Scan(&p.ID, &p.ParentID, &p.Title, &p.Icon, &p.IconColor, &p.Position, &p.CreatedAt, &p.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("scan page: %w", err)
 		}
 		pages = append(pages, p)

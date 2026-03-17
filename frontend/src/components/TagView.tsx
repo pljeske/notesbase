@@ -2,6 +2,7 @@ import {useEffect, useState} from 'react';
 import {useParams, useNavigate} from 'react-router-dom';
 import {useTagStore} from '../stores/tagStore';
 import {tagsApi} from '../api/tags';
+import {PageIcon} from '../utils/icons';
 import type {Page} from '../types/page';
 
 export function TagView() {
@@ -9,17 +10,17 @@ export function TagView() {
   const navigate = useNavigate();
   const {tags} = useTagStore();
   const [pages, setPages] = useState<Page[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loadedForTag, setLoadedForTag] = useState<string | null>(null);
+  const isLoading = !!tagId && loadedForTag !== tagId;
 
   const tag = tags.find((t) => t.id === tagId);
 
   useEffect(() => {
     if (!tagId) return;
-    setIsLoading(true);
     tagsApi.getPagesByTag(tagId)
       .then((p) => setPages(p))
       .catch(() => setPages([]))
-      .finally(() => setIsLoading(false));
+      .finally(() => setLoadedForTag(tagId));
   }, [tagId]);
 
   if (isLoading) {
@@ -49,7 +50,9 @@ export function TagView() {
               className="w-full text-left flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-50 border border-gray-100"
               onClick={() => navigate(`/page/${page.id}`)}
             >
-              <span className="text-lg">{page.icon || '\uD83D\uDCC4'}</span>
+              <span className="text-lg text-gray-500">
+                <PageIcon icon={page.icon} color={page.icon_color} size={20} weight="light"/>
+              </span>
               <div>
                 <p className="text-sm font-medium text-gray-800">{page.title || 'Untitled'}</p>
                 <p className="text-xs text-gray-400">

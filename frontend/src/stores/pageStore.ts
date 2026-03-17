@@ -25,6 +25,9 @@ interface PageState {
   updateActivePageLocal: (title?: string, content?: JSONContent) => void;
 }
 
+// Tracks the most recently requested page ID to discard stale responses.
+let currentPageRequestId = '';
+
 function patchTreeNode(
   nodes: PageTreeNode[],
   id: string,
@@ -59,12 +62,17 @@ export const usePageStore = create<PageState>((set, get) => ({
   },
 
   fetchPage: async (id: string) => {
+    currentPageRequestId = id;
     set({isPageLoading: true});
     try {
       const page = await pagesApi.getById(id);
-      set({activePage: page, isPageLoading: false});
+      if (currentPageRequestId === id) {
+        set({activePage: page, isPageLoading: false});
+      }
     } catch {
-      set({isPageLoading: false});
+      if (currentPageRequestId === id) {
+        set({isPageLoading: false});
+      }
     }
   },
 

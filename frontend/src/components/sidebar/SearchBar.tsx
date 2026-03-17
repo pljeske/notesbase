@@ -13,21 +13,21 @@ export function SearchBar() {
   const [activeIndex, setActiveIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const requestIdRef = useRef(0);
   const navigate = useNavigate();
 
   // Debounced search
   useEffect(() => {
     const trimmed = query.trim();
-    if (!trimmed) {
-      setResults([]);
-      return;
-    }
-    setLoading(true);
+    const myId = ++requestIdRef.current;
+    if (!trimmed) return;
     const timer = setTimeout(() => {
+      if (requestIdRef.current !== myId) return;
+      setLoading(true);
       pagesApi.search(trimmed)
-        .then((r) => { setResults(r); setActiveIndex(-1); })
-        .catch(() => setResults([]))
-        .finally(() => setLoading(false));
+        .then((r) => { if (requestIdRef.current === myId) { setResults(r); setActiveIndex(-1); } })
+        .catch(() => { if (requestIdRef.current === myId) setResults([]); })
+        .finally(() => { if (requestIdRef.current === myId) setLoading(false); });
     }, 250);
     return () => clearTimeout(timer);
   }, [query]);
