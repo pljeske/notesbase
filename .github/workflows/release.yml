@@ -78,6 +78,7 @@ jobs:
           context: .
           file: docker/Dockerfile.backend
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
@@ -124,6 +125,7 @@ jobs:
           context: .
           file: docker/Dockerfile.frontend
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
@@ -138,7 +140,7 @@ jobs:
     if: needs.release.result == 'success' && needs.release.outputs.version != ''
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       packages: write
     steps:
       - name: Checkout
@@ -204,5 +206,5 @@ jobs:
           gh release upload v${{ needs.release.outputs.version }} \
             dist/notesbase-server-linux-amd64 \
             dist/notesbase-server-linux-arm64 \
-            docker-compose.yml \
+            compose.yml \
             --clobber
