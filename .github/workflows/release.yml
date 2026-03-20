@@ -132,6 +132,47 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+  publish-helm:
+    name: Publish Helm Chart
+    needs: release
+    if: needs.release.result == 'success' && needs.release.outputs.version != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io --username ${{ github.actor }} --password-stdin
+
+      - name: Update chart dependencies
+        run: |
+          helm dependency update helm/notesbase
+          # Helm v4 requires dependencies to be unpacked (not just tarballs)
+          find helm/notesbase/charts -name '*.tgz' -exec tar -xzf {} -C helm/notesbase/charts/ \;
+
+      - name: Package chart
+        run: |
+          helm package helm/notesbase \
+            --version ${{ needs.release.outputs.version }} \
+            --app-version v${{ needs.release.outputs.version }}
+
+      - name: Push chart to GHCR
+        run: helm push notesbase-${{ needs.release.outputs.version }}.tgz oci://ghcr.io/${{ env.OWNER }}/charts
+
+      - name: Upload chart to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload v${{ needs.release.outputs.version }} \
+            notesbase-${{ needs.release.outputs.version }}.tgz \
+            --clobber
+
   release-assets:
     name: Release Assets
     needs: release

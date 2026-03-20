@@ -1,0 +1,84 @@
+image:
+  registry: ghcr.io
+  owner: "pljeske"
+  tag: latest
+  pullPolicy: IfNotPresent
+
+backend:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 56Mi
+
+frontend:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 56Mi
+
+ingress:
+  enabled: true
+  annotations: {}
+  className: ""
+  host: "notesbase.example.com"
+  tls: {}
+  #  - secretName: notesbase-tls
+  #    hosts:
+  #      - notesbase.example.com
+
+config:
+  # Required: set a strong random secret (e.g. openssl rand -hex 32)
+  jwtSecret: ""
+  # CORS origin(s) sent to browsers. Defaults to https://<ingress.host> when
+  # ingress.host is set. Override if you need multiple origins.
+  corsAllowedOrigins: ""
+  disableRegistration: false
+  minioBucket: notesbase-files
+  minioUseSSL: "false"
+  maxUploadSize: "52428800" # bytes
+
+# groundhog2k PostgreSQL subchart — https://github.com/groundhog2k/helm-charts/tree/master/charts/postgres
+postgres:
+  enabled: true
+  settings:
+    # needs to be created manually with the key POSTGRES_PASSWORD
+    existingSecret: postgres-secret
+    authMethod: "md5"
+  userDatabase:
+    name:
+      value: notesbase
+    user:
+      value: notesbase
+    password:
+      value: ""   # change this
+  resources:
+    limits:
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# Official MinIO subchart — https://charts.min.io/
+minio:
+  enabled: true
+  rootUser: notesbase
+  rootPassword: ""
+  buckets:
+    - name: notesbase-files
+      policy: none
+      purge: false
+  # Disable MinIO console in production
+  consoleService:
+    type: ClusterIP
+  mode: standalone
+  persistence:
+    enabled: true
+    size: 5Gi
+  resources:
+    limits:
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi

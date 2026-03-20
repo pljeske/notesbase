@@ -8,3 +8,5 @@ frontend/dist/
 backend/server
 .claude
 .idea
+helm/notesbase/charts/
+helm/notesbase/Chart.lock

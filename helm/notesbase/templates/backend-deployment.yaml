@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-backend
+  labels:
+    {{- include "notesbase.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  replicas: {{ .Values.backend.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "notesbase.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: backend
+  template:
+    metadata:
+      labels:
+        {{- include "notesbase.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: backend
+    spec:
+      imagePullSecrets:
+        - name: regcred
+      containers:
+        - name: backend
+          image: "{{ .Values.image.registry }}/{{ .Values.image.owner }}/notesbase-backend:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: SERVER_PORT
+              value: "8080"
+            - name: MINIO_ENDPOINT
+              value: {{ include "notesbase.minioEndpoint" . | quote }}
+            - name: MINIO_BUCKET
+              value: {{ .Values.config.minioBucket | quote }}
+            - name: MINIO_USE_SSL
+              value: {{ .Values.config.minioUseSSL | quote }}
+            - name: MAX_UPLOAD_SIZE
+              value: {{ .Values.config.maxUploadSize | quote }}
+            - name: DISABLE_REGISTRATION
+              value: {{ .Values.config.disableRegistration | quote }}
+            - name: CORS_ALLOWED_ORIGINS
+              value: {{ include "notesbase.corsOrigins" . | quote }}
+          envFrom:
+            - secretRef:
+                name: {{ .Release.Name }}-notesbase
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          {{- with .Values.backend.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
