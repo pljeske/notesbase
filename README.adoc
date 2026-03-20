@@ -4,6 +4,26 @@ Vibe coded simple but scalable notes app.
 
 == Roadmap
 
-- encryption
-- rendering PDFs directly on the page
-- mcp-server for asking knowledgebase questions
+=== Editor
+- Table support
+- Callout/admonition blocks (info, warning, tip)
+- Rendering PDFs directly on the page
+
+=== Navigation & Organization
+- Breadcrumbs on page header
+- Favorites / pinned pages
+- Sidebar drag-and-drop reordering
+- Page linking with `+[[page name]]+` mentions and backlinks
+
+=== Search
+- Advanced search filters (`tag:`, `before:`, `after:`)
+
+=== Users & Security
+- Password reset flow
+- Encryption
+
+=== Customization
+- Dark mode
+
+=== Integrations
+- MCP server for asking knowledgebase questions

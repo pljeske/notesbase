@@ -2,6 +2,8 @@ import {EditorContent, ReactNodeViewRenderer, useEditor} from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
+import Underline from '@tiptap/extension-underline';
+import Link from '@tiptap/extension-link';
 import {createLowlight, common} from 'lowlight';
 import {AuthImage} from './AuthImage';
 import {useEffect, useRef, useState} from 'react';
@@ -10,6 +12,7 @@ import {PdfBlock} from './PdfBlock';
 import {FileBlock} from './FileBlock';
 import {CodeBlockView} from './CodeBlockView';
 import {IconPicker} from './IconPicker';
+import {FormattingToolbar} from './FormattingToolbar';
 import {PageIcon} from '../../utils/icons';
 import type {JSONContent} from '../../types/page';
 import {uploadFile} from '../../api/upload';
@@ -45,6 +48,8 @@ export function Editor({content, onUpdate, pageTitle, onTitleChange, pageId, pag
       Placeholder.configure({
         placeholder: 'Type "/" for commands...',
       }),
+      Underline,
+      Link.configure({openOnClick: false}),
       AuthImage,
       PdfBlock,
       FileBlock,
@@ -176,6 +181,7 @@ export function Editor({content, onUpdate, pageTitle, onTitleChange, pageId, pag
         onChange={(e) => onTitleChange(e.target.value)}
         placeholder="Untitled"
       />
+      {editor && <FormattingToolbar editor={editor}/>}
       <EditorContent editor={editor} className="prose prose-lg max-w-none"/>
     </div>
   );
