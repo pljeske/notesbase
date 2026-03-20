@@ -95,3 +95,30 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 
 	c.JSON(http.StatusOK, resp)
 }
+
+func (h *AuthHandler) ForgotPassword(c *gin.Context) {
+	var req model.ForgotPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Always return 200 — never reveal whether the email is registered.
+	_ = h.service.RequestPasswordReset(c.Request.Context(), req.Email)
+	c.JSON(http.StatusOK, gin.H{"message": "If that email is registered, a reset link has been sent."})
+}
+
+func (h *AuthHandler) ResetPassword(c *gin.Context) {
+	var req model.ResetPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.service.ResetPassword(c.Request.Context(), req.Token, req.Password); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid or expired reset link."})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Password updated successfully."})
+}

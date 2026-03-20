@@ -2,6 +2,9 @@ package service
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"time"
 
@@ -15,14 +18,27 @@ import (
 
 type AuthService struct {
 	repo          repository.UserRepository
+	resetRepo     repository.PasswordResetRepository
+	emailSvc      *EmailService
+	appURL        string
 	jwtSecret     []byte
 	accessExpiry  time.Duration
 	refreshExpiry time.Duration
 }
 
-func NewAuthService(repo repository.UserRepository, secret string, accessExpiry, refreshExpiry time.Duration) *AuthService {
+func NewAuthService(
+	repo repository.UserRepository,
+	resetRepo repository.PasswordResetRepository,
+	emailSvc *EmailService,
+	appURL string,
+	secret string,
+	accessExpiry, refreshExpiry time.Duration,
+) *AuthService {
 	return &AuthService{
 		repo:          repo,
+		resetRepo:     resetRepo,
+		emailSvc:      emailSvc,
+		appURL:        appURL,
 		jwtSecret:     []byte(secret),
 		accessExpiry:  accessExpiry,
 		refreshExpiry: refreshExpiry,
@@ -161,6 +177,60 @@ func (s *AuthService) ValidateToken(tokenStr string) (uuid.UUID, string, error) 
 		return uuid.Nil, "", fmt.Errorf("invalid token type")
 	}
 	return userID, role, nil
+}
+
+// RequestPasswordReset generates a reset token and emails it.
+// Always returns nil to avoid leaking whether an email is registered.
+func (s *AuthService) RequestPasswordReset(ctx context.Context, email string) error {
+	user, err := s.repo.GetByEmail(ctx, email)
+	if err != nil || user == nil {
+		return nil
+	}
+
+	// Invalidate any existing tokens for this user.
+	_ = s.resetRepo.DeleteByUserID(ctx, user.ID)
+
+	// Generate a 32-byte cryptographically random token.
+	raw := make([]byte, 32)
+	if _, err := rand.Read(raw); err != nil {
+		return fmt.Errorf("generate token: %w", err)
+	}
+	token := hex.EncodeToString(raw)
+	hash := sha256.Sum256([]byte(token))
+	tokenHash := hex.EncodeToString(hash[:])
+
+	expiresAt := time.Now().Add(time.Hour)
+	if err := s.resetRepo.Create(ctx, user.ID, tokenHash, expiresAt); err != nil {
+		return fmt.Errorf("store reset token: %w", err)
+	}
+
+	resetURL := fmt.Sprintf("%s/reset-password?token=%s", s.appURL, token)
+	return s.emailSvc.SendPasswordReset(user.Email, user.Name, resetURL)
+}
+
+// ResetPassword validates the token and updates the user's password.
+func (s *AuthService) ResetPassword(ctx context.Context, token, newPassword string) error {
+	hash := sha256.Sum256([]byte(token))
+	tokenHash := hex.EncodeToString(hash[:])
+
+	record, err := s.resetRepo.GetByTokenHash(ctx, tokenHash)
+	if err != nil {
+		return fmt.Errorf("lookup token: %w", err)
+	}
+	if record == nil || time.Now().After(record.ExpiresAt) {
+		return fmt.Errorf("invalid or expired token")
+	}
+
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("hash password: %w", err)
+	}
+
+	if err := s.repo.UpdatePassword(ctx, record.UserID, string(passwordHash)); err != nil {
+		return fmt.Errorf("update password: %w", err)
+	}
+
+	return s.resetRepo.DeleteByUserID(ctx, record.UserID)
 }
 
 func (s *AuthService) generateTokenPair(userID uuid.UUID, role string) (string, string, error) {
