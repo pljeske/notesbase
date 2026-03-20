@@ -25,6 +25,14 @@ type Config struct {
 	MinioBucket    string
 	MinioUseSSL    bool
 	MaxUploadSize  int64
+
+	// SMTP (password reset emails)
+	SMTPHost     string
+	SMTPPort     string
+	SMTPUsername string
+	SMTPPassword string
+	SMTPFrom     string
+	AppURL       string
 }
 
 func Load() *Config {
@@ -45,6 +53,13 @@ func Load() *Config {
 		MinioBucket:    getEnv("MINIO_BUCKET", "notes-files"),
 		MinioUseSSL:    getEnv("MINIO_USE_SSL", "false") == "true",
 		MaxUploadSize:  getInt64("MAX_UPLOAD_SIZE", 52428800),
+
+		SMTPHost:     getEnv("SMTP_HOST", ""),
+		SMTPPort:     getEnv("SMTP_PORT", "587"),
+		SMTPUsername: getEnv("SMTP_USERNAME", ""),
+		SMTPPassword: getEnv("SMTP_PASSWORD", ""),
+		SMTPFrom:     getEnv("SMTP_FROM", getEnv("SMTP_USERNAME", "")),
+		AppURL:       getEnv("APP_URL", "http://localhost:5173"),
 	}
 }
 

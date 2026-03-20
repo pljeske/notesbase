@@ -6,6 +6,8 @@ import {TagView} from './components/TagView';
 import {WelcomePage} from './components/WelcomePage';
 import {LoginPage} from './components/auth/LoginPage';
 import {RegisterPage} from './components/auth/RegisterPage';
+import {ForgotPasswordPage} from './components/auth/ForgotPasswordPage';
+import {ResetPasswordPage} from './components/auth/ResetPasswordPage';
 import {AdminPanel} from './components/admin/AdminPanel';
 import {useAuthStore} from './stores/authStore';
 
@@ -45,6 +47,8 @@ function App() {
         {/* Public routes */}
         <Route path="/login" element={<GuestGuard><LoginPage/></GuestGuard>}/>
         <Route path="/register" element={<GuestGuard><RegisterPage/></GuestGuard>}/>
+        <Route path="/forgot-password" element={<GuestGuard><ForgotPasswordPage/></GuestGuard>}/>
+        <Route path="/reset-password" element={<GuestGuard><ResetPasswordPage/></GuestGuard>}/>
 
         {/* Protected routes */}
         <Route element={<AuthGuard><AppLayout/></AuthGuard>}>

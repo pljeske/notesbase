@@ -62,3 +62,20 @@ type SetDisabledRequest struct {
 type UpdateSettingsRequest struct {
 	RegistrationEnabled bool `json:"registration_enabled"`
 }
+
+type PasswordResetToken struct {
+	ID        uuid.UUID
+	UserID    uuid.UUID
+	TokenHash string
+	ExpiresAt time.Time
+	CreatedAt time.Time
+}
+
+type ForgotPasswordRequest struct {
+	Email string `json:"email" binding:"required,email"`
+}
+
+type ResetPasswordRequest struct {
+	Token    string `json:"token" binding:"required"`
+	Password string `json:"password" binding:"required,min=8"`
+}

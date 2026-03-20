@@ -108,6 +108,16 @@ func (r *PostgresUserRepository) UpdateRole(ctx context.Context, id uuid.UUID, r
 	return nil
 }
 
+func (r *PostgresUserRepository) UpdatePassword(ctx context.Context, id uuid.UUID, passwordHash string) error {
+	_, err := r.pool.Exec(ctx,
+		`UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2`,
+		passwordHash, id)
+	if err != nil {
+		return fmt.Errorf("update user password: %w", err)
+	}
+	return nil
+}
+
 func (r *PostgresUserRepository) SetDisabled(ctx context.Context, id uuid.UUID, disabled bool) error {
 	var query string
 	if disabled {

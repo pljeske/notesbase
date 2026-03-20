@@ -16,4 +16,5 @@ type UserRepository interface {
 	ListAll(ctx context.Context) ([]*model.User, error)
 	UpdateRole(ctx context.Context, id uuid.UUID, role string) error
 	SetDisabled(ctx context.Context, id uuid.UUID, disabled bool) error
+	UpdatePassword(ctx context.Context, id uuid.UUID, passwordHash string) error
 }

@@ -70,6 +70,7 @@ func main() {
 	// Auth & settings layer
 	userRepo := repository.NewPostgresUserRepository(pool)
 	settingsRepo := repository.NewPostgresSettingsRepository(pool)
+	resetRepo := repository.NewPostgresPasswordResetRepository(pool)
 
 	// Seed registration_enabled from env var (only if not yet set in DB).
 	seedRegistrationSetting(ctx, settingsRepo, cfg.RegistrationDisabled)
@@ -77,7 +78,8 @@ func main() {
 	// Ensure at least one admin exists (promotes oldest user after migration).
 	ensureAdminExists(ctx, userRepo)
 
-	authSvc := service.NewAuthService(userRepo, cfg.JWTSecret, cfg.JWTAccessExpiry, cfg.JWTRefreshExpiry)
+	emailSvc := service.NewEmailService(cfg.SMTPHost, cfg.SMTPPort, cfg.SMTPUsername, cfg.SMTPPassword, cfg.SMTPFrom)
+	authSvc := service.NewAuthService(userRepo, resetRepo, emailSvc, cfg.AppURL, cfg.JWTSecret, cfg.JWTAccessExpiry, cfg.JWTRefreshExpiry)
 	authHandler := handler.NewAuthHandler(authSvc, settingsRepo)
 	adminHandler := handler.NewAdminHandler(userRepo, settingsRepo)
 	authMiddleware := middleware.Auth(authSvc)
@@ -95,6 +97,8 @@ func main() {
 	router.POST("/api/auth/register", authHandler.Register)
 	router.POST("/api/auth/login", authHandler.Login)
 	router.POST("/api/auth/refresh", authHandler.Refresh)
+	router.POST("/api/auth/forgot-password", authHandler.ForgotPassword)
+	router.POST("/api/auth/reset-password", authHandler.ResetPassword)
 
 	// Protected API routes
 	api := router.Group("/api")
