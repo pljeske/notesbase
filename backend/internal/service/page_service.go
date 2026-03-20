@@ -52,7 +52,7 @@ func (s *PageService) GetPage(ctx context.Context, userID uuid.UUID, id uuid.UUI
 	}
 
 	if s.tagRepo != nil {
-		tags, err := s.tagRepo.GetByPageID(ctx, id)
+		tags, err := s.tagRepo.GetByPageID(ctx, userID, id)
 		if err != nil {
 			log.Printf("Warning: failed to load tags for page %s: %v", id, err)
 		} else {
@@ -88,7 +88,7 @@ func (s *PageService) UpdatePage(ctx context.Context, userID uuid.UUID, id uuid.
 			}
 		}
 		// Always load tags so the response is complete regardless of what was updated
-		tags, err := s.tagRepo.GetByPageID(ctx, id)
+		tags, err := s.tagRepo.GetByPageID(ctx, userID, id)
 		if err == nil {
 			page.Tags = tags
 		}

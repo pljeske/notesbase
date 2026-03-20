@@ -41,9 +41,15 @@ interface EditorProps {
 
 export function Editor({content, onUpdate, pageTitle, onTitleChange, pageId, pageIcon, pageIconColor, onIconChange, onIconColorChange}: EditorProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const iconButtonRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const location = useLocation();
+
+  const showUploadError = (msg: string) => {
+    setUploadError(msg);
+    setTimeout(() => setUploadError(null), 4000);
+  };
 
   const initialFocusTitle = useRef(location.state?.focusTitle as boolean | undefined);
   useEffect(() => {
@@ -112,6 +118,7 @@ export function Editor({content, onUpdate, pageTitle, onTitleChange, pageId, pag
             })
             .catch((err) => {
               console.error('Upload failed:', err);
+              showUploadError(`Upload failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
             });
         }
 
@@ -137,6 +144,7 @@ export function Editor({content, onUpdate, pageTitle, onTitleChange, pageId, pag
           })
           .catch((err) => {
             console.error('Upload failed:', err);
+            showUploadError(`Upload failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
           });
 
         return true;
@@ -156,6 +164,11 @@ export function Editor({content, onUpdate, pageTitle, onTitleChange, pageId, pag
 
   return (
     <div className="editor-wrapper max-w-3xl mx-auto py-12 px-8">
+      {uploadError && (
+        <div className="mb-4 px-3 py-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded">
+          {uploadError}
+        </div>
+      )}
       <div className="group mb-2">
         <div ref={iconButtonRef} className="relative inline-block">
           {pageIcon ? (

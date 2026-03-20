@@ -28,8 +28,9 @@ interface PageState {
 
 // Tracks the most recently requested page ID to discard stale responses.
 let currentPageRequestId = '';
-// Tracks the save-status reset timer so a new save can cancel the previous one.
-let saveStatusTimer: ReturnType<typeof setTimeout> | null = null;
+// Tracks the save-status reset timers keyed by page ID so rapid page switches
+// don't cancel the wrong page's indicator.
+const saveStatusTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 function patchTreeNode(
   nodes: PageTreeNode[],
@@ -92,9 +93,10 @@ export const usePageStore = create<PageState>((set, get) => ({
   },
 
   updatePage: async (id: string, data: UpdatePageRequest) => {
-    if (saveStatusTimer) {
-      clearTimeout(saveStatusTimer);
-      saveStatusTimer = null;
+    const existing = saveStatusTimers.get(id);
+    if (existing) {
+      clearTimeout(existing);
+      saveStatusTimers.delete(id);
     }
     set({saveStatus: 'saving'});
     try {
@@ -114,10 +116,11 @@ export const usePageStore = create<PageState>((set, get) => ({
           }),
         }));
       }
-      saveStatusTimer = setTimeout(() => {
-        saveStatusTimer = null;
+      const timer = setTimeout(() => {
+        saveStatusTimers.delete(id);
         set({saveStatus: 'idle'});
       }, 2000);
+      saveStatusTimers.set(id, timer);
     } catch {
       set({saveStatus: 'error'});
     }

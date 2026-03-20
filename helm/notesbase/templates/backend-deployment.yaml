@@ -19,6 +19,10 @@ spec:
     spec:
       imagePullSecrets:
         - name: regcred
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        fsGroup: 65532
       containers:
         - name: backend
           image: "{{ .Values.image.registry }}/{{ .Values.image.owner }}/notesbase-backend:{{ .Values.image.tag }}"
@@ -56,6 +60,11 @@ spec:
               port: 8080
             initialDelaySeconds: 15
             periodSeconds: 30
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ "ALL" ]
           {{- with .Values.backend.resources }}
           resources:
             {{- toYaml . | nindent 12 }}

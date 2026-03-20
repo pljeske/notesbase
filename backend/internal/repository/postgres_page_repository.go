@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"time"
 
 	"notesbase/backend/internal/model"
@@ -171,8 +172,12 @@ func (r *PostgresPageRepository) SoftDelete(ctx context.Context, userID uuid.UUI
 }
 
 func (r *PostgresPageRepository) ListTrashed(ctx context.Context, userID uuid.UUID) ([]model.TrashedPage, error) {
-	// Auto-purge pages older than 30 days
-	_, _ = r.PurgeExpired(ctx, userID, time.Now().AddDate(0, 0, -30))
+	// Auto-purge pages older than 30 days in a background goroutine to avoid blocking the response.
+	go func() {
+		if _, err := r.PurgeExpired(context.Background(), userID, time.Now().AddDate(0, 0, -30)); err != nil {
+			log.Printf("auto-purge trash failed for user %s: %v", userID, err)
+		}
+	}()
 
 	rows, err := r.pool.Query(ctx,
 		`SELECT id, title, icon, icon_color, deleted_at
@@ -283,6 +288,25 @@ func (r *PostgresPageRepository) GetDescendants(ctx context.Context, userID uuid
 }
 
 func (r *PostgresPageRepository) Move(ctx context.Context, userID uuid.UUID, id uuid.UUID, req model.MovePageRequest) error {
+	// Prevent circular parent references: reject if the target parent is a descendant of this page.
+	if req.ParentID != nil {
+		var isDescendant bool
+		err := r.pool.QueryRow(ctx,
+			`WITH RECURSIVE subtree AS (
+				SELECT id FROM pages WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
+				UNION ALL
+				SELECT p.id FROM pages p JOIN subtree s ON p.parent_id = s.id WHERE p.deleted_at IS NULL
+			)
+			SELECT EXISTS(SELECT 1 FROM subtree WHERE id = $3)`,
+			id, userID, *req.ParentID).Scan(&isDescendant)
+		if err != nil {
+			return fmt.Errorf("check circular parent: %w", err)
+		}
+		if isDescendant {
+			return fmt.Errorf("cannot move a page under one of its own descendants")
+		}
+	}
+
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)

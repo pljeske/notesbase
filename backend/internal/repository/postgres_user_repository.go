@@ -108,6 +108,20 @@ func (r *PostgresUserRepository) UpdateRole(ctx context.Context, id uuid.UUID, r
 	return nil
 }
 
+// UpdateRoleChecked atomically updates the role, but prevents demoting the last admin.
+// When role is "user", the UPDATE only executes if there are currently ≥2 admins.
+// Returns false (without error) when blocked by the last-admin check.
+func (r *PostgresUserRepository) UpdateRoleChecked(ctx context.Context, id uuid.UUID, role string) (bool, error) {
+	result, err := r.pool.Exec(ctx,
+		`UPDATE users SET role = $1, updated_at = NOW() WHERE id = $2
+		 AND ($1 != 'user' OR (SELECT COUNT(*) FROM users WHERE role = 'admin') > 1)`,
+		role, id)
+	if err != nil {
+		return false, fmt.Errorf("update user role: %w", err)
+	}
+	return result.RowsAffected() == 1, nil
+}
+
 func (r *PostgresUserRepository) UpdatePassword(ctx context.Context, id uuid.UUID, passwordHash string) error {
 	_, err := r.pool.Exec(ctx,
 		`UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2`,

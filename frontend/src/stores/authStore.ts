@@ -1,6 +1,7 @@
 import {create} from 'zustand';
-import {authApi} from '../api/auth';
 import type {LoginData, RegisterData} from '../api/auth';
+import {authApi} from '../api/auth';
+import {clearBlobCache} from '../api/fetchFile';
 
 interface UserInfo {
   id: string;
@@ -83,6 +84,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
+    clearBlobCache();
     set({
       token: null,
       refreshToken: null,

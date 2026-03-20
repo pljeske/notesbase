@@ -121,12 +121,14 @@ func (r *PostgresTagRepository) Delete(ctx context.Context, userID uuid.UUID, id
 	return nil
 }
 
-func (r *PostgresTagRepository) GetByPageID(ctx context.Context, pageID uuid.UUID) ([]model.Tag, error) {
+func (r *PostgresTagRepository) GetByPageID(ctx context.Context, userID uuid.UUID, pageID uuid.UUID) ([]model.Tag, error) {
 	rows, err := r.pool.Query(ctx,
 		`SELECT t.id, t.user_id, t.name, t.color, t.created_at
-		 FROM tags t JOIN page_tags pt ON t.id = pt.tag_id
-		 WHERE pt.page_id = $1 ORDER BY t.name ASC`,
-		pageID)
+		 FROM tags t
+		 JOIN page_tags pt ON t.id = pt.tag_id
+		 JOIN pages p ON p.id = pt.page_id
+		 WHERE pt.page_id = $1 AND p.user_id = $2 ORDER BY t.name ASC`,
+		pageID, userID)
 	if err != nil {
 		return nil, fmt.Errorf("query tags by page: %w", err)
 	}
