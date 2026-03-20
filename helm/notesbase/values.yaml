@@ -23,7 +23,7 @@ ingress:
   annotations: {}
   className: ""
   host: "notesbase.example.com"
-  tls: {}
+  tls: [ ]
   #  - secretName: notesbase-tls
   #    hosts:
   #      - notesbase.example.com
