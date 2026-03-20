@@ -7,6 +7,7 @@ import Link from '@tiptap/extension-link';
 import {common, createLowlight} from 'lowlight';
 import {AuthImage} from './AuthImage';
 import {useEffect, useRef, useState} from 'react';
+import {useLocation} from 'react-router-dom';
 import {SlashCommand} from './SlashCommand';
 import {PdfBlock} from './PdfBlock';
 import {FileBlock} from './FileBlock';
@@ -41,6 +42,16 @@ interface EditorProps {
 export function Editor({content, onUpdate, pageTitle, onTitleChange, pageId, pageIcon, pageIconColor, onIconChange, onIconColorChange}: EditorProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const iconButtonRef = useRef<HTMLDivElement>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  const location = useLocation();
+
+  const initialFocusTitle = useRef(location.state?.focusTitle as boolean | undefined);
+  useEffect(() => {
+    if (initialFocusTitle.current) {
+      titleInputRef.current?.focus();
+      titleInputRef.current?.select();
+    }
+  }, []);
   const editor = useEditor({
     extensions: [
       StarterKit.configure({codeBlock: false}),
@@ -176,9 +187,11 @@ export function Editor({content, onUpdate, pageTitle, onTitleChange, pageId, pag
         </div>
       </div>
       <input
+        ref={titleInputRef}
         className="text-4xl font-bold w-full outline-none border-none bg-transparent mb-4 text-gray-900 placeholder-gray-300"
         value={pageTitle}
         onChange={(e) => onTitleChange(e.target.value)}
+        onFocus={(e) => e.target.select()}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
             e.preventDefault();

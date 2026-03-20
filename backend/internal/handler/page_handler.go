@@ -60,7 +60,12 @@ func (h *PageHandler) GetPage(c *gin.Context) {
 		return
 	}
 	if page == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
+		trashed, _ := h.service.IsPageTrashed(c.Request.Context(), userID, id)
+		if trashed {
+			c.JSON(http.StatusNotFound, gin.H{"error": "page is in trash"})
+		} else {
+			c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
+		}
 		return
 	}
 

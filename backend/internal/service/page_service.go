@@ -63,6 +63,10 @@ func (s *PageService) GetPage(ctx context.Context, userID uuid.UUID, id uuid.UUI
 	return page, nil
 }
 
+func (s *PageService) IsPageTrashed(ctx context.Context, userID uuid.UUID, id uuid.UUID) (bool, error) {
+	return s.repo.IsTrashed(ctx, userID, id)
+}
+
 func (s *PageService) CreatePage(ctx context.Context, userID uuid.UUID, req model.CreatePageRequest) (*model.Page, error) {
 	return s.repo.Create(ctx, userID, req)
 }

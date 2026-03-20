@@ -4,6 +4,10 @@ Vibe coded simple but scalable notes app.
 
 == Roadmap
 
+=== Build/Workflow
+
+- integrate helm chart & frontend/backend versioning in go-semantic-version workflow
+
 === Editor
 - Table support
 - Callout/admonition blocks (info, warning, tip)

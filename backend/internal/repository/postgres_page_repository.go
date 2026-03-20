@@ -351,3 +351,14 @@ func (r *PostgresPageRepository) Search(ctx context.Context, userID uuid.UUID, q
 	}
 	return results, rows.Err()
 }
+
+func (r *PostgresPageRepository) IsTrashed(ctx context.Context, userID uuid.UUID, id uuid.UUID) (bool, error) {
+	var exists bool
+	err := r.pool.QueryRow(ctx,
+		`SELECT EXISTS(SELECT 1 FROM pages WHERE id = $1 AND user_id = $2 AND deleted_at IS NOT NULL)`,
+		id, userID).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("check trashed: %w", err)
+	}
+	return exists, nil
+}

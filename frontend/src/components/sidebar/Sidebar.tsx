@@ -6,7 +6,7 @@ import {TagSection} from './TagSection';
 import {TrashSection} from './TrashSection';
 import {ExportDialog} from '../ExportDialog';
 import {SearchBar} from './SearchBar';
-import {DownloadSimple} from '@phosphor-icons/react';
+import {DownloadSimpleIcon} from '@phosphor-icons/react';
 
 export function Sidebar() {
   const {tree, isTreeLoading, fetchTree, createPage} = usePageStore();
@@ -17,9 +17,10 @@ export function Sidebar() {
     fetchTree();
   }, [fetchTree]);
 
-  const handleCreatePage = async () => {
+  const handleCreatePage = async (e?: React.MouseEvent<HTMLButtonElement>) => {
+    (e?.currentTarget as HTMLButtonElement | undefined)?.blur();
     const page = await createPage(null);
-    navigate(`/page/${page.id}`);
+    navigate(`/page/${page.id}`, {state: {focusTitle: true}});
   };
 
   return (
@@ -34,10 +35,10 @@ export function Sidebar() {
             className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded"
             title="Export all pages"
           >
-            <DownloadSimple size={14} weight="light"/>
+            <DownloadSimpleIcon size={14} weight="light"/>
           </button>
           <button
-            onClick={handleCreatePage}
+            onClick={(e) => handleCreatePage(e)}
             className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded"
             title="New page"
           >
