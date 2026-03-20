@@ -9,6 +9,14 @@ plugins:
 
   - name: "@go-semantic-release/changelog-generator-default"
 
+  - name: "@go-semantic-release/updater-helm"
+    options:
+      path: helm/notesbase/Chart.yaml
+
+  - name: "@go-semantic-release/updater-npm"
+    options:
+      path: frontend/package.json
+
   - name: "@go-semantic-release/github"
     options:
       emojis: false

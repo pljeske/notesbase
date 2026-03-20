@@ -10,3 +10,4 @@ backend/server
 .idea
 helm/notesbase/charts/
 helm/notesbase/Chart.lock
+.ai

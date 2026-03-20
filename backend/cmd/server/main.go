@@ -20,6 +20,8 @@ import (
 )
 
 func main() {
+	log.Printf("notesbase %s (%s)", version, commit)
+
 	cfg := config.Load()
 
 	ctx := context.Background()
