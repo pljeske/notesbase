@@ -13,6 +13,7 @@ interface PageState {
 
   fetchTree: () => Promise<void>;
   fetchPage: (id: string) => Promise<void>;
+  fetchPageError: string | null;
   createPage: (parentId?: string | null) => Promise<Page>;
   updatePage: (id: string, data: UpdatePageRequest) => Promise<void>;
   deletePage: (id: string) => Promise<void>;
@@ -27,6 +28,8 @@ interface PageState {
 
 // Tracks the most recently requested page ID to discard stale responses.
 let currentPageRequestId = '';
+// Tracks the save-status reset timer so a new save can cancel the previous one.
+let saveStatusTimer: ReturnType<typeof setTimeout> | null = null;
 
 function patchTreeNode(
   nodes: PageTreeNode[],
@@ -47,6 +50,7 @@ export const usePageStore = create<PageState>((set, get) => ({
   isTreeLoading: false,
   activePage: null,
   isPageLoading: false,
+  fetchPageError: null,
   saveStatus: 'idle',
   trash: [],
   isTrashLoading: false,
@@ -63,15 +67,18 @@ export const usePageStore = create<PageState>((set, get) => ({
 
   fetchPage: async (id: string) => {
     currentPageRequestId = id;
-    set({isPageLoading: true});
+    set({isPageLoading: true, fetchPageError: null});
     try {
       const page = await pagesApi.getById(id);
       if (currentPageRequestId === id) {
         set({activePage: page, isPageLoading: false});
       }
-    } catch {
+    } catch (err) {
       if (currentPageRequestId === id) {
-        set({isPageLoading: false});
+        set({
+          isPageLoading: false,
+          fetchPageError: err instanceof Error ? err.message : 'Failed to load page',
+        });
       }
     }
   },
@@ -85,6 +92,10 @@ export const usePageStore = create<PageState>((set, get) => ({
   },
 
   updatePage: async (id: string, data: UpdatePageRequest) => {
+    if (saveStatusTimer) {
+      clearTimeout(saveStatusTimer);
+      saveStatusTimer = null;
+    }
     set({saveStatus: 'saving'});
     try {
       const updatedPage = await pagesApi.update(id, data);
@@ -103,10 +114,9 @@ export const usePageStore = create<PageState>((set, get) => ({
           }),
         }));
       }
-      setTimeout(() => {
-        if (get().saveStatus === 'saved') {
-          set({saveStatus: 'idle'});
-        }
+      saveStatusTimer = setTimeout(() => {
+        saveStatusTimer = null;
+        set({saveStatus: 'idle'});
       }, 2000);
     } catch {
       set({saveStatus: 'error'});

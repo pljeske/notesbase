@@ -1,40 +1,43 @@
 import {useCallback, useEffect, useState} from 'react';
-import {useParams} from 'react-router-dom';
+import {Link, useParams} from 'react-router-dom';
 import {usePageStore} from '../stores/pageStore';
 import {useAutoSave} from '../hooks/useAutoSave';
 import {Editor} from './editor/Editor';
 import {TagPicker} from './editor/TagPicker';
 import {ExportDialog} from './ExportDialog';
-import {DownloadSimple} from '@phosphor-icons/react';
+import {DownloadSimpleIcon} from '@phosphor-icons/react';
 import type {JSONContent} from '../types/page';
 
 export function PageView() {
   const {pageId} = useParams<{ pageId: string }>();
-  const {activePage, isPageLoading, fetchPage, updatePage} = usePageStore();
+  const {activePage, isPageLoading, fetchPageError, fetchPage, updatePage} = usePageStore();
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState<JSONContent | null>(null);
   const [icon, setIcon] = useState<string | null>(null);
   const [iconColor, setIconColor] = useState<string | null>(null);
-  const [initialized, setInitialized] = useState(false);
+  const [initializedPageId, setInitializedPageId] = useState<string | null>(null);
   const [exportOpen, setExportOpen] = useState(false);
+
+  const initialized = initializedPageId === pageId;
 
   useEffect(() => {
     if (pageId) {
-      setInitialized(false);
       fetchPage(pageId);
     }
   }, [pageId, fetchPage]);
 
   useEffect(() => {
-    if (activePage && activePage.id === pageId && !initialized) {
-      setTitle(activePage.title);
-      setContent(activePage.content);
-      setIcon(activePage.icon);
-      setIconColor(activePage.icon_color);
-      setInitialized(true);
+    if (activePage && activePage.id === pageId && initializedPageId !== pageId) {
+      setTimeout(() => {
+        setTitle(activePage.title);
+        setContent(activePage.content);
+        setIcon(activePage.icon);
+        setIconColor(activePage.icon_color);
+        setInitializedPageId(pageId);
+      }, 0);
     }
-  }, [activePage, pageId, initialized]);
+  }, [activePage, pageId, initializedPageId]);
 
   const save = useCallback(async () => {
     if (!pageId) return;
@@ -81,7 +84,48 @@ export function PageView() {
     [debouncedSave]
   );
 
-  if (isPageLoading || !initialized) {
+  useEffect(() => {
+    if (!initialized) return;
+    document.title = title ? `${title} – notesbase` : 'notesbase';
+    return () => {
+      document.title = 'notesbase';
+    };
+  }, [title, initialized]);
+
+  if (isPageLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <span className="text-gray-400 text-sm">Loading...</span>
+      </div>
+    );
+  }
+
+  if (fetchPageError) {
+    const isTrashed = fetchPageError.toLowerCase().includes('trash') ||
+      fetchPageError.toLowerCase().includes('deleted');
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-3">
+        <p className="text-gray-500 text-sm">
+          {isTrashed ? 'This page is in the Trash.' : 'This page could not be found.'}
+        </p>
+        {isTrashed && (
+          <Link
+            to="/"
+            className="text-xs text-gray-400 hover:text-gray-600 underline"
+          >
+            Go to Trash to restore it
+          </Link>
+        )}
+        {!isTrashed && (
+          <Link to="/" className="text-xs text-gray-400 hover:text-gray-600 underline">
+            Go home
+          </Link>
+        )}
+      </div>
+    );
+  }
+
+  if (!initialized) {
     return (
       <div className="flex items-center justify-center h-full">
         <span className="text-gray-400 text-sm">Loading...</span>
@@ -101,7 +145,7 @@ export function PageView() {
           className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-100 transition-colors"
           title="Export page"
         >
-          <DownloadSimple size={15} weight="light"/>
+          <DownloadSimpleIcon size={15} weight="light"/>
         </button>
       </div>
       {exportOpen && <ExportDialog mode="page" onClose={() => setExportOpen(false)}/>}

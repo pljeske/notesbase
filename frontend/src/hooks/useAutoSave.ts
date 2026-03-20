@@ -7,7 +7,9 @@ export function useAutoSave(
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveFnRef = useRef(saveFunction);
 
-  saveFnRef.current = saveFunction;
+  useEffect(() => {
+    saveFnRef.current = saveFunction;
+  });
 
   const debouncedSave = useCallback(() => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);

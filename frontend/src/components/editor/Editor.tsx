@@ -4,7 +4,7 @@ import Placeholder from '@tiptap/extension-placeholder';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
-import {createLowlight, common} from 'lowlight';
+import {common, createLowlight} from 'lowlight';
 import {AuthImage} from './AuthImage';
 import {useEffect, useRef, useState} from 'react';
 import {SlashCommand} from './SlashCommand';
@@ -179,6 +179,12 @@ export function Editor({content, onUpdate, pageTitle, onTitleChange, pageId, pag
         className="text-4xl font-bold w-full outline-none border-none bg-transparent mb-4 text-gray-900 placeholder-gray-300"
         value={pageTitle}
         onChange={(e) => onTitleChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            editor?.commands.focus('start');
+          }
+        }}
         placeholder="Untitled"
       />
       {editor && <FormattingToolbar editor={editor}/>}

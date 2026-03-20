@@ -4,6 +4,8 @@ import {usePageStore} from '../../stores/pageStore';
 import type {Tag} from '../../types/tag';
 import {TAG_COLORS} from '../../types/tag';
 
+const getRandomColor = () => TAG_COLORS[Math.floor(Math.random() * TAG_COLORS.length)];
+
 interface TagPickerProps {
   pageId: string;
   selectedTags: Tag[];
@@ -42,7 +44,7 @@ export function TagPicker({pageId, selectedTags}: TagPickerProps) {
 
   const handleCreate = async () => {
     if (!newName.trim()) return;
-    const tag = await createTag({name: newName.trim(), color: TAG_COLORS[Math.floor(Math.random() * TAG_COLORS.length)]});
+    const tag = await createTag({name: newName.trim(), color: getRandomColor()});
     setNewName('');
     await updatePage(pageId, {tag_ids: [...selectedIds, tag.id]});
   };

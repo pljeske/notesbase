@@ -13,7 +13,10 @@ export const SlashCommandList = forwardRef<
   const [selectedIndex, setSelectedIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => setSelectedIndex(0), [props.items]);
+  useEffect(() => {
+    const timeout = setTimeout(() => setSelectedIndex(0), 0);
+    return () => clearTimeout(timeout);
+  }, [props.items]);
 
   useEffect(() => {
     const container = containerRef.current;
