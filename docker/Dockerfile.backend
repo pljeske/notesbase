@@ -17,8 +17,11 @@ LABEL org.opencontainers.image.title="notesbase-backend" \
       org.opencontainers.image.version="${VERSION}" \
       org.opencontainers.image.revision="${COMMIT}" \
       org.opencontainers.image.source="https://github.com/pljeske/notesbase"
-COPY --from=builder /server /server
-COPY --from=builder /app/migrations /migrations
+# Use --chown=65532:0 so files are accessible to OpenShift's arbitrary-UID processes
+# (OpenShift assigns random UIDs that belong to GID 0 / root group).
+COPY --chown=65532:0 --from=builder /server /server
+COPY --chown=65532:0 --from=builder /app/migrations /migrations
 EXPOSE 8080
-USER nonroot:nonroot
+# 65532 = distroless nonroot UID; GID 0 (root group) satisfies OpenShift restricted SCC
+USER 65532:0
 ENTRYPOINT ["/server"]

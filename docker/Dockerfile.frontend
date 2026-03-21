@@ -5,7 +5,7 @@ RUN npm ci
 COPY frontend/ .
 # Leave VITE_API_URL empty (default) so the app uses relative URLs.
 # This makes the image portable across Docker Compose and Kubernetes.
-ARG VITE_API_URL=
+ARG VITE_API_URL
 ENV VITE_API_URL=$VITE_API_URL
 ARG VERSION=dev
 ARG COMMIT=unknown
@@ -24,7 +24,18 @@ LABEL org.opencontainers.image.title="notesbase-frontend" \
 COPY docker/Caddyfile /etc/caddy/Caddyfile
 COPY --from=builder /app/dist /srv
 
+# Fix ownership and permissions so Caddy runs as a non-root user and is
+# compatible with OpenShift's arbitrary-UID model (assigned UID belongs to GID 0).
+# /data and /config are Caddy's XDG storage dirs (set by the base image via ENV).
+# They need to be group-writable; /srv and /etc/caddy only need group-readable.
+RUN mkdir -p /data/caddy /config/caddy \
+    && chown -R 1001:0 /data /config /srv /etc/caddy \
+    && chmod -R g+rwX /data /config \
+    && chmod -R g+rX  /srv /etc/caddy
+
 EXPOSE 8080
+# 1001:0 = non-root UID, GID 0 (root group) — satisfies OpenShift restricted SCC
+USER 1001:0
 # OTel tracing: set OTEL_EXPORTER_OTLP_ENDPOINT (and optionally OTEL_SERVICE_NAME)
 # at runtime to enable distributed tracing via Caddy's built-in OTel support.
 HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=3 \
