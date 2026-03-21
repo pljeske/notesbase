@@ -26,11 +26,16 @@ jobs:
         working-directory: backend
         run: go test ./...
 
+      # Build golangci-lint from source using the same Go toolchain as the project.
+      # The pre-built binaries from golangci-lint-action are compiled with an older Go
+      # and refuse to lint projects whose go.mod targets a newer Go version.
+      - name: Install golangci-lint
+        working-directory: backend
+        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          working-directory: backend
-          version: latest
+        working-directory: backend
+        run: golangci-lint run --path-prefix=backend ./...
 
   test-frontend:
     name: Frontend Lint
