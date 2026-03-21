@@ -24,6 +24,10 @@ func main() {
 
 	cfg := config.Load()
 
+	if cfg.JWTSecret == "" || cfg.JWTSecret == "change-me-in-production" {
+		log.Fatal("JWT_SECRET environment variable must be set to a strong random value (e.g. openssl rand -hex 32)")
+	}
+
 	ctx := context.Background()
 
 	// Database

@@ -10,6 +10,7 @@ export function SearchBar() {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [searchError, setSearchError] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -24,9 +25,15 @@ export function SearchBar() {
     const timer = setTimeout(() => {
       if (requestIdRef.current !== myId) return;
       setLoading(true);
+      setSearchError(false);
       pagesApi.search(trimmed)
         .then((r) => { if (requestIdRef.current === myId) { setResults(r); setActiveIndex(-1); } })
-        .catch(() => { if (requestIdRef.current === myId) setResults([]); })
+        .catch(() => {
+          if (requestIdRef.current === myId) {
+            setResults([]);
+            setSearchError(true);
+          }
+        })
         .finally(() => { if (requestIdRef.current === myId) setLoading(false); });
     }, 250);
     return () => clearTimeout(timer);
@@ -99,6 +106,8 @@ export function SearchBar() {
         <div className="absolute left-2 right-2 top-full z-50 mt-0.5 bg-white border border-gray-200 rounded shadow-md overflow-hidden">
           {loading ? (
             <div className="px-3 py-2 text-xs text-gray-400">Searching...</div>
+          ) : searchError ? (
+            <div className="px-3 py-2 text-xs text-red-400">Search failed. Try again.</div>
           ) : results.length === 0 ? (
             <div className="px-3 py-2 text-xs text-gray-400">No results</div>
           ) : (

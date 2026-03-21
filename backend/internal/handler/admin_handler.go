@@ -64,27 +64,18 @@ func (h *AdminHandler) UpdateUserRole(c *gin.Context) {
 		return
 	}
 
-	// Prevent demoting the last admin.
-	if req.Role == "user" {
-		users, err := h.userRepo.ListAll(c.Request.Context())
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to check admins"})
-			return
-		}
-		adminCount := 0
-		for _, u := range users {
-			if u.Role == "admin" {
-				adminCount++
-			}
-		}
-		if adminCount <= 1 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "cannot demote the last admin"})
-			return
-		}
-	}
-
-	if err := h.userRepo.UpdateRole(c.Request.Context(), targetID, req.Role); err != nil {
+	// UpdateRoleChecked atomically prevents demoting the last admin.
+	updated, err := h.userRepo.UpdateRoleChecked(c.Request.Context(), targetID, req.Role)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update role"})
+		return
+	}
+	if !updated {
+		if req.Role == "user" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "cannot demote the last admin"})
+		} else {
+			c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		}
 		return
 	}
 

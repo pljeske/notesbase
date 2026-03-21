@@ -45,9 +45,8 @@ export async function request<T>(
         return retryResponse.json();
       }
     }
-    // Refresh failed — redirect to login
+    // Refresh failed — clear auth state; AuthGuard will redirect to /login.
     useAuthStore.getState().logout();
-    window.location.href = '/login';
     throw new Error('Session expired');
   }
 

@@ -33,6 +33,7 @@ MinIO endpoint (service name of the subchart).
 
 {{/*
 CORS origin: use explicit value if set, otherwise derive from ingress host.
+Fails if neither is configured to prevent an accidental wildcard origin.
 */}}
 {{- define "notesbase.corsOrigins" -}}
 {{- if .Values.config.corsAllowedOrigins -}}
@@ -40,6 +41,6 @@ CORS origin: use explicit value if set, otherwise derive from ingress host.
 {{- else if .Values.ingress.host -}}
 https://{{ .Values.ingress.host }}
 {{- else -}}
-*
+{{- fail "Either config.corsAllowedOrigins or ingress.host must be set" -}}
 {{- end -}}
 {{- end }}

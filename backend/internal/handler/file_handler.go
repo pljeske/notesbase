@@ -2,8 +2,10 @@ package handler
 
 import (
 	"io"
+	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"notesbase/backend/internal/middleware"
 	"notesbase/backend/internal/service"
@@ -80,13 +82,18 @@ func (h *FileHandler) GetFile(c *gin.Context) {
 	}
 	defer reader.Close()
 
+	// Sanitize filename to prevent HTTP header injection via Content-Disposition.
+	safeFilename := strings.NewReplacer(`"`, `\"`, "\r", "", "\n", "").Replace(fileMeta.Filename)
+
 	c.Header("Content-Type", fileMeta.ContentType)
 	c.Header("Content-Length", strconv.FormatInt(fileMeta.Size, 10))
-	c.Header("Content-Disposition", "inline; filename=\""+fileMeta.Filename+"\"")
+	c.Header("Content-Disposition", "inline; filename=\""+safeFilename+"\"")
 	c.Header("Cache-Control", "public, max-age=31536000, immutable")
 
 	c.Status(http.StatusOK)
-	io.Copy(c.Writer, reader)
+	if _, err := io.Copy(c.Writer, reader); err != nil {
+		log.Printf("file download copy error (file %s): %v", id, err)
+	}
 }
 
 func (h *FileHandler) DeleteFile(c *gin.Context) {

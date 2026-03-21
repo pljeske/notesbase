@@ -23,10 +23,18 @@ function AuthImageView({node, updateAttributes, selected}: ReactNodeViewProps) {
   const [resizing, setResizing] = useState(false);
   const [liveWidth, setLiveWidth] = useState(width);
   const containerRef = useRef<HTMLDivElement>(null);
+  const resizeCleanupRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     setLiveWidth(width);
   }, [width]);
+
+  // Clean up any active resize listeners when the component unmounts.
+  useEffect(() => {
+    return () => {
+      resizeCleanupRef.current?.();
+    };
+  }, []);
 
   useEffect(() => {
     if (!src) return;
@@ -58,6 +66,12 @@ function AuthImageView({node, updateAttributes, selected}: ReactNodeViewProps) {
       setLiveWidth(`${Math.round((clamped / parentWidth) * 100)}%`);
     };
 
+    const cleanup = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      resizeCleanupRef.current = null;
+    };
+
     const onMouseUp = (ev: MouseEvent) => {
       const delta = side === 'right' ? ev.clientX - startX : startX - ev.clientX;
       const clamped = Math.max(80, Math.min(parentWidth, startWidthPx + delta));
@@ -65,12 +79,12 @@ function AuthImageView({node, updateAttributes, selected}: ReactNodeViewProps) {
       setLiveWidth(final);
       updateAttributes({width: final});
       setResizing(false);
-      document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseup', onMouseUp);
+      cleanup();
     };
 
     document.addEventListener('mousemove', onMouseMove);
     document.addEventListener('mouseup', onMouseUp);
+    resizeCleanupRef.current = cleanup;
   };
 
   if (error) {

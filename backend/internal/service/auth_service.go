@@ -209,6 +209,8 @@ func (s *AuthService) RequestPasswordReset(ctx context.Context, email string) er
 }
 
 // ResetPassword validates the token and updates the user's password.
+// The token is consumed (deleted) before the password is updated to prevent
+// TOCTOU: if two concurrent requests race, only the first to delete the token wins.
 func (s *AuthService) ResetPassword(ctx context.Context, token, newPassword string) error {
 	hash := sha256.Sum256([]byte(token))
 	tokenHash := hex.EncodeToString(hash[:])
@@ -226,11 +228,14 @@ func (s *AuthService) ResetPassword(ctx context.Context, token, newPassword stri
 		return fmt.Errorf("hash password: %w", err)
 	}
 
-	if err := s.repo.UpdatePassword(ctx, record.UserID, string(passwordHash)); err != nil {
-		return fmt.Errorf("update password: %w", err)
+	// Consume the token atomically before updating the password.
+	// DeleteByTokenHash returns an error if the token was already consumed by a
+	// concurrent request, ensuring each token can only be used once.
+	if err := s.resetRepo.DeleteByTokenHash(ctx, tokenHash); err != nil {
+		return fmt.Errorf("invalid or expired token")
 	}
 
-	return s.resetRepo.DeleteByUserID(ctx, record.UserID)
+	return s.repo.UpdatePassword(ctx, record.UserID, string(passwordHash))
 }
 
 func (s *AuthService) generateTokenPair(userID uuid.UUID, role string) (string, string, error) {

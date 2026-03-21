@@ -56,10 +56,13 @@ func (r *PostgresPasswordResetRepository) DeleteByUserID(ctx context.Context, us
 }
 
 func (r *PostgresPasswordResetRepository) DeleteByTokenHash(ctx context.Context, tokenHash string) error {
-	_, err := r.pool.Exec(ctx,
+	result, err := r.pool.Exec(ctx,
 		`DELETE FROM password_reset_tokens WHERE token_hash = $1`, tokenHash)
 	if err != nil {
 		return fmt.Errorf("delete password reset token: %w", err)
+	}
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("token not found")
 	}
 	return nil
 }

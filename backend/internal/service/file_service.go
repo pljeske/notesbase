@@ -106,6 +106,7 @@ func (s *FileService) CleanupOrphanedFiles(ctx context.Context, userID uuid.UUID
 		if !referencedIDs[f.ID] {
 			if err := s.storage.Delete(ctx, f.S3Key); err != nil {
 				log.Printf("Warning: failed to delete S3 object %s: %v", f.S3Key, err)
+				continue // Don't remove the DB record if S3 deletion failed; avoids orphaned objects.
 			}
 			if err := s.repo.Delete(ctx, userID, f.ID); err != nil {
 				log.Printf("Warning: failed to delete file record %s: %v", f.ID, err)
@@ -126,6 +127,7 @@ func (s *FileService) DeleteAllPageFiles(ctx context.Context, userID uuid.UUID, 
 	for _, f := range pageFiles {
 		if err := s.storage.Delete(ctx, f.S3Key); err != nil {
 			log.Printf("Warning: failed to delete S3 object %s: %v", f.S3Key, err)
+			continue // Don't remove the DB record if S3 deletion failed; avoids orphaned objects.
 		}
 		if err := s.repo.Delete(ctx, userID, f.ID); err != nil {
 			log.Printf("Warning: failed to delete file record %s: %v", f.ID, err)

@@ -1,7 +1,5 @@
 import {request} from './client';
 
-const BASE_URL = import.meta.env.VITE_API_URL || '';
-
 export interface RegisterData {
   email: string;
   password: string;
@@ -29,10 +27,8 @@ export interface AppConfig {
 }
 
 export const authApi = {
-  getConfig: async (): Promise<AppConfig> => {
-    const res = await fetch(`${BASE_URL}/api/config`);
-    return res.json();
-  },
+  getConfig: (): Promise<AppConfig> =>
+    request<AppConfig>('/api/config'),
 
 
   register: (data: RegisterData) =>
