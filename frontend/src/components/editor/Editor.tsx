@@ -9,6 +9,7 @@ import {AuthImage} from './AuthImage';
 import {useEffect, useRef, useState} from 'react';
 import {useLocation} from 'react-router-dom';
 import {SlashCommand} from './SlashCommand';
+import {PageMention} from './PageMention';
 import {PdfBlock} from './PdfBlock';
 import {FileBlock} from './FileBlock';
 import {CodeBlockView} from './CodeBlockView';
@@ -71,6 +72,7 @@ export function Editor({content, onUpdate, pageTitle, onTitleChange, pageId, pag
       PdfBlock,
       FileBlock,
       SlashCommand,
+      PageMention,
     ],
     content: content ?? undefined,
     onUpdate: ({editor}) => {

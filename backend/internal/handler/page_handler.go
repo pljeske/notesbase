@@ -197,6 +197,21 @@ func (h *PageHandler) PermanentDelete(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
+func (h *PageHandler) GetBacklinks(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid page id"})
+		return
+	}
+	results, err := h.service.GetBacklinks(c.Request.Context(), userID, id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, results)
+}
+
 func (h *PageHandler) DuplicatePage(c *gin.Context) {
 	userID := middleware.GetUserID(c)
 	id, err := uuid.Parse(c.Param("id"))
