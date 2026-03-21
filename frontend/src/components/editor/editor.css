@@ -402,3 +402,26 @@
   color: #9ca3af;
   flex-shrink: 0;
 }
+
+/* Page mention inline node */
+.page-mention {
+  display: inline;
+  color: #2563eb;
+  background-color: #eff6ff;
+  border-radius: 3px;
+  padding: 0.1em 0.3em;
+  font-size: 0.9em;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: background-color 0.1s;
+}
+
+.page-mention:hover {
+  background-color: #dbeafe;
+  color: #1d4ed8;
+}
+
+.page-mention-wrapper {
+  display: inline;
+}

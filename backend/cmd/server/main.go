@@ -68,7 +68,8 @@ func main() {
 	tagSvc := service.NewTagService(tagRepo)
 
 	pageRepo := repository.NewPostgresPageRepository(pool)
-	pageSvc := service.NewPageService(pageRepo, tagRepo, fileSvc)
+	pageLinkRepo := repository.NewPostgresPageLinkRepository(pool)
+	pageSvc := service.NewPageService(pageRepo, tagRepo, fileSvc, pageLinkRepo)
 	pageHandler := handler.NewPageHandler(pageSvc)
 	tagHandler := handler.NewTagHandler(tagSvc, pageSvc)
 	healthHandler := handler.NewHealthHandler(pool)
@@ -119,6 +120,7 @@ func main() {
 		api.PATCH("/pages/:id/move", pageHandler.MovePage)
 		api.POST("/pages/:id/restore", pageHandler.RestorePage)
 		api.POST("/pages/:id/duplicate", pageHandler.DuplicatePage)
+		api.GET("/pages/:id/backlinks", pageHandler.GetBacklinks)
 
 		api.GET("/trash", pageHandler.ListTrash)
 		api.DELETE("/trash/:id", pageHandler.PermanentDelete)

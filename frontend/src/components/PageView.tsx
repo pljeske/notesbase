@@ -6,7 +6,8 @@ import {Editor} from './editor/Editor';
 import {TagPicker} from './editor/TagPicker';
 import {ExportDialog} from './ExportDialog';
 import {DownloadSimpleIcon} from '@phosphor-icons/react';
-import type {JSONContent} from '../types/page';
+import type {JSONContent, SearchResult} from '../types/page';
+import {pagesApi} from '../api/pages';
 
 export function PageView() {
   const {pageId} = useParams<{ pageId: string }>();
@@ -18,6 +19,7 @@ export function PageView() {
   const [iconColor, setIconColor] = useState<string | null>(null);
   const [initializedPageId, setInitializedPageId] = useState<string | null>(null);
   const [exportOpen, setExportOpen] = useState(false);
+  const [backlinks, setBacklinks] = useState<SearchResult[]>([]);
 
   const initialized = initializedPageId === pageId;
 
@@ -26,6 +28,11 @@ export function PageView() {
       fetchPage(pageId);
     }
   }, [pageId, fetchPage]);
+
+  useEffect(() => {
+    if (!pageId) return;
+    pagesApi.getBacklinks(pageId).then(setBacklinks).catch(() => setBacklinks([]));
+  }, [pageId]);
 
   useEffect(() => {
     if (activePage && activePage.id === pageId && initializedPageId !== pageId) {
@@ -149,7 +156,7 @@ export function PageView() {
         </button>
       </div>
       {exportOpen && <ExportDialog mode="page" onClose={() => setExportOpen(false)}/>}
-      <div className="flex-1 min-h-0">
+      <div className="flex-1 min-h-0 overflow-y-auto">
         <Editor
           key={pageId}
           content={content}
@@ -162,6 +169,26 @@ export function PageView() {
           onIconChange={handleIconChange}
           onIconColorChange={handleIconColorChange}
         />
+        {backlinks.length > 0 && (
+          <div className="max-w-3xl mx-auto px-8 pb-12">
+            <div className="border-t border-gray-100 pt-6">
+              <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">
+                Linked from
+              </h3>
+              <div className="flex flex-col gap-1">
+                {backlinks.map((bl) => (
+                  <Link
+                    key={bl.id}
+                    to={`/page/${bl.id}`}
+                    className="text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-2 py-1 rounded -mx-2 transition-colors"
+                  >
+                    {bl.title || 'Untitled'}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

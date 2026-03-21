@@ -1,5 +1,13 @@
 import {request} from './client';
-import type {CreatePageRequest, MovePageRequest, Page, PageTreeNode, SearchResult, TrashedPage, UpdatePageRequest,} from '../types/page';
+import type {
+  CreatePageRequest,
+  MovePageRequest,
+  Page,
+  PageTreeNode,
+  SearchResult,
+  TrashedPage,
+  UpdatePageRequest,
+} from '../types/page';
 
 export const pagesApi = {
   getTree: () => request<PageTreeNode[]>('/api/pages'),
@@ -43,4 +51,7 @@ export const pagesApi = {
 
   permanentDelete: (id: string) =>
     request<void>(`/api/trash/${id}`, {method: 'DELETE'}),
+
+  getBacklinks: (id: string) =>
+    request<SearchResult[]>(`/api/pages/${id}/backlinks`),
 };

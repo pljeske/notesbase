@@ -15,13 +15,14 @@ import (
 )
 
 type PageService struct {
-	repo    repository.PageRepository
-	tagRepo repository.TagRepository
-	fileSvc *FileService
+	repo     repository.PageRepository
+	tagRepo  repository.TagRepository
+	fileSvc  *FileService
+	linkRepo repository.PageLinkRepository
 }
 
-func NewPageService(repo repository.PageRepository, tagRepo repository.TagRepository, fileSvc *FileService) *PageService {
-	return &PageService{repo: repo, tagRepo: tagRepo, fileSvc: fileSvc}
+func NewPageService(repo repository.PageRepository, tagRepo repository.TagRepository, fileSvc *FileService, linkRepo repository.PageLinkRepository) *PageService {
+	return &PageService{repo: repo, tagRepo: tagRepo, fileSvc: fileSvc, linkRepo: linkRepo}
 }
 
 func (s *PageService) GetTree(ctx context.Context, userID uuid.UUID) ([]model.PageTreeNode, error) {
@@ -99,6 +100,11 @@ func (s *PageService) UpdatePage(ctx context.Context, userID uuid.UUID, id uuid.
 		if err := s.fileSvc.CleanupOrphanedFiles(ctx, userID, id, page.Content); err != nil {
 			log.Printf("Warning: failed to clean up orphaned files for page %s: %v", id, err)
 		}
+	}
+
+	// Update page links (mentions) if content was updated
+	if req.Content != nil {
+		s.UpdateLinks(ctx, id, *req.Content)
 	}
 
 	return page, nil
@@ -238,6 +244,79 @@ func rewriteFileIDsInContent(content []byte, fileIDMap map[uuid.UUID]uuid.UUID) 
 	}
 	r := strings.NewReplacer(pairs...)
 	return []byte(r.Replace(s))
+}
+
+// extractMentionIDs walks TipTap JSON and returns unique pageMention node IDs.
+func extractMentionIDs(content json.RawMessage) []uuid.UUID {
+	if len(content) == 0 {
+		return nil
+	}
+	var node map[string]json.RawMessage
+	if err := json.Unmarshal(content, &node); err != nil {
+		return nil
+	}
+
+	seen := make(map[uuid.UUID]struct{})
+	var walk func(n map[string]json.RawMessage)
+	walk = func(n map[string]json.RawMessage) {
+		// Check if this node is a pageMention
+		if typeRaw, ok := n["type"]; ok {
+			var nodeType string
+			if err := json.Unmarshal(typeRaw, &nodeType); err == nil && nodeType == "pageMention" {
+				if attrsRaw, ok := n["attrs"]; ok {
+					var attrs map[string]json.RawMessage
+					if err := json.Unmarshal(attrsRaw, &attrs); err == nil {
+						if idRaw, ok := attrs["id"]; ok {
+							var idStr string
+							if err := json.Unmarshal(idRaw, &idStr); err == nil && idStr != "" {
+								if id, err := uuid.Parse(idStr); err == nil {
+									seen[id] = struct{}{}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		// Walk children
+		if childrenRaw, ok := n["content"]; ok {
+			var children []json.RawMessage
+			if err := json.Unmarshal(childrenRaw, &children); err == nil {
+				for _, child := range children {
+					var childNode map[string]json.RawMessage
+					if err := json.Unmarshal(child, &childNode); err == nil {
+						walk(childNode)
+					}
+				}
+			}
+		}
+	}
+	walk(node)
+
+	ids := make([]uuid.UUID, 0, len(seen))
+	for id := range seen {
+		ids = append(ids, id)
+	}
+	return ids
+}
+
+// UpdateLinks extracts pageMention nodes from content and updates the page_links table.
+func (s *PageService) UpdateLinks(ctx context.Context, pageID uuid.UUID, content json.RawMessage) {
+	if s.linkRepo == nil || content == nil {
+		return
+	}
+	ids := extractMentionIDs(content)
+	if err := s.linkRepo.ReplaceLinks(ctx, pageID, ids); err != nil {
+		log.Printf("Warning: failed to update page links for %s: %v", pageID, err)
+	}
+}
+
+// GetBacklinks returns pages that link to the given page, filtered to the user's pages.
+func (s *PageService) GetBacklinks(ctx context.Context, userID uuid.UUID, pageID uuid.UUID) ([]model.SearchResult, error) {
+	if s.linkRepo == nil {
+		return []model.SearchResult{}, nil
+	}
+	return s.linkRepo.GetBacklinks(ctx, userID, pageID)
 }
 
 func buildTree(pages []model.Page, tagsByPage map[uuid.UUID][]model.Tag) []model.PageTreeNode {
