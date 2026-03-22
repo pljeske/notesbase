@@ -22,7 +22,7 @@ spec:
       securityContext:
         runAsNonRoot: true
         runAsUser: 65532
-        fsGroup: 65532
+        fsGroup: 0
       containers:
         - name: frontend
           image: "{{ .Values.image.registry }}/{{ .Values.image.owner }}/notesbase-frontend:{{ .Values.image.tag }}"
@@ -47,7 +47,17 @@ spec:
             readOnlyRootFilesystem: true
             capabilities:
               drop: [ "ALL" ]
+          volumeMounts:
+            - name: caddy-data
+              mountPath: /data
+            - name: caddy-config
+              mountPath: /config
           {{- with .Values.frontend.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+      volumes:
+        - name: caddy-data
+          emptyDir: { }
+        - name: caddy-config
+          emptyDir: { }

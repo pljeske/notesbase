@@ -13,6 +13,13 @@ RUN npm run build
 
 FROM caddy:2-alpine
 
+# Strip the CAP_NET_BIND_SERVICE file capability from the Caddy binary.
+# The base image sets it so Caddy can bind to ports 80/443 without root, but
+# we run on port 8080 and don't need it. With allowPrivilegeEscalation=false
+# (no_new_privs), the kernel refuses to exec binaries that carry file
+# capabilities, causing a CrashLoopBackOff in Kubernetes.
+RUN apk add --no-cache libcap && setcap -r /usr/bin/caddy && apk del libcap
+
 ARG VERSION=dev
 ARG COMMIT=unknown
 
