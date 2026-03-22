@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version tag to build (e.g. v1.2.3)'
+        description: "Semantic version to release (e.g. 1.2.3, without v prefix)"
         required: true
         type: string
 
@@ -15,7 +15,12 @@ env:
   REGISTRY: ghcr.io
   OWNER: ${{ github.repository_owner }}
 
+permissions: { }
+
 jobs:
+  # ---------------------------------------------------------------------------
+  # 1a. Automatic release via go-semantic-release (push to main only).
+  # ---------------------------------------------------------------------------
   release:
     name: Semantic Release
     if: github.event_name == 'push'
@@ -38,30 +43,147 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           allow-initial-development-versions: true
           changelog-file: CHANGELOG.md
-          update-file: CHANGELOG.md
 
-  build-backend:
-    name: Backend Image
-    needs: release
-    if: always() && (needs.release.result == 'success' || needs.release.result == 'skipped')
+      # The updater-helm plugin only touches `version`. Patch `appVersion` on
+      # main so the working tree stays accurate for anyone installing from
+      # source. The published Helm chart gets the correct appVersion via
+      # `helm package --app-version` regardless.
+      - name: Sync Chart.yaml appVersion on main
+        if: steps.release.outputs.released == 'true'
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          pip install --quiet --break-system-packages yq
+          yq -Yi ".appVersion = \"v${VERSION}\"" helm/notesbase/Chart.yaml
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add helm/notesbase/Chart.yaml
+          git diff --cached --quiet || \
+            git commit -m "chore: sync Chart.yaml appVersion to v${VERSION} [skip ci]" && \
+            git push
+
+  # ---------------------------------------------------------------------------
+  # 1b. Manual release via workflow_dispatch. Creates a tag and GitHub release
+  #     so the downstream flow is identical to an automatic release.
+  # ---------------------------------------------------------------------------
+  manual-release:
+    name: Manual Release
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.validate.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate and prepare version
+        id: validate
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version }}
+        run: |
+          VERSION="${INPUT_VERSION#v}"
+
+          if ! echo "${VERSION}" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Invalid semver: ${VERSION}. Expected format: 1.2.3"
+            exit 1
+          fi
+
+          if git rev-parse "v${VERSION}" >/dev/null 2>&1; then
+            echo "::error::Tag v${VERSION} already exists."
+            exit 1
+          fi
+
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Update Chart.yaml
+        env:
+          VERSION: ${{ steps.validate.outputs.version }}
+        run: |
+          pip install --quiet --break-system-packages yq
+          yq -Yi ".version = \"${VERSION}\" | .appVersion = \"v${VERSION}\"" helm/notesbase/Chart.yaml
+
+      - name: Update frontend package.json
+        env:
+          VERSION: ${{ steps.validate.outputs.version }}
+        run: |
+          cd frontend
+          npm version "${VERSION}" --no-git-tag-version
+
+      - name: Commit, tag, and push
+        env:
+          VERSION: ${{ steps.validate.outputs.version }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || \
+            git commit -m "chore: release v${VERSION} [skip ci]"
+          git tag "v${VERSION}"
+          git push
+          git push origin "v${VERSION}"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.validate.outputs.version }}
+        run: |
+          gh release create "v${VERSION}" \
+            --title "v${VERSION}" \
+            --generate-notes
+
+  # ---------------------------------------------------------------------------
+  # 2. Resolve version – single source of truth for all downstream jobs.
+  # ---------------------------------------------------------------------------
+  resolve-version:
+    name: Resolve Version
+    needs: [ release, manual-release ]
+    if: >-
+      always() &&
+      (needs.release.result == 'success' || needs.release.result == 'skipped') &&
+      (needs.manual-release.result == 'success' || needs.manual-release.result == 'skipped')
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+      semver: ${{ steps.resolve.outputs.semver }}
+    steps:
+      - name: Determine version string
+        id: resolve
+        run: |
+          if [ -n "${{ needs.manual-release.outputs.version }}" ]; then
+            VERSION="v${{ needs.manual-release.outputs.version }}"
+          elif [ -n "${{ needs.release.outputs.version }}" ]; then
+            VERSION="v${{ needs.release.outputs.version }}"
+          else
+            echo "No version resolved, skipping downstream jobs."
+            exit 0
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "semver=${VERSION#v}"  >> "$GITHUB_OUTPUT"
+
+  # ---------------------------------------------------------------------------
+  # 3. Build container images (backend + frontend in parallel via matrix).
+  # ---------------------------------------------------------------------------
+  build-image:
+    name: Build ${{ matrix.component }} Image
+    needs: resolve-version
+    if: needs.resolve-version.outputs.version != ''
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        component: [ backend, frontend ]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Resolve version
-        id: version
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "value=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
-          elif [ -n "${{ needs.release.outputs.version }}" ]; then
-            echo "value=v${{ needs.release.outputs.version }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "value=${{ github.sha }}" >> "$GITHUB_OUTPUT"
-          fi
+        with:
+          ref: ${{ needs.resolve-version.outputs.version }}
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -74,11 +196,10 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.OWNER }}/notesbase-backend
+          images: ${{ env.REGISTRY }}/${{ env.OWNER }}/notesbase-${{ matrix.component }}
           tags: |
-            type=raw,value=latest,enable=${{ github.event_name == 'push' }}
-            type=raw,value=v${{ needs.release.outputs.version }},enable=${{ needs.release.outputs.version != '' }}
-            type=raw,value=${{ github.event.inputs.version }},enable=${{ github.event_name == 'workflow_dispatch' }}
+            type=raw,value=latest
+            type=raw,value=${{ needs.resolve-version.outputs.version }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -87,79 +208,25 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: docker/Dockerfile.backend
+          file: docker/Dockerfile.${{ matrix.component }}
           push: true
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            VERSION=${{ steps.version.outputs.value }}
+            VERSION=${{ needs.resolve-version.outputs.version }}
             COMMIT=${{ github.sha }}
-          cache-from: type=gha,scope=backend
-          cache-to: type=gha,mode=max,scope=backend
+          cache-from: type=gha,scope=${{ matrix.component }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.component }}
 
-  build-frontend:
-    name: Frontend Image
-    needs: release
-    if: always() && (needs.release.result == 'success' || needs.release.result == 'skipped')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Resolve version
-        id: version
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "value=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
-          elif [ -n "${{ needs.release.outputs.version }}" ]; then
-            echo "value=v${{ needs.release.outputs.version }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "value=${{ github.sha }}" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.OWNER }}/notesbase-frontend
-          tags: |
-            type=raw,value=latest,enable=${{ github.event_name == 'push' }}
-            type=raw,value=v${{ needs.release.outputs.version }},enable=${{ needs.release.outputs.version != '' }}
-            type=raw,value=${{ github.event.inputs.version }},enable=${{ github.event_name == 'workflow_dispatch' }}
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build and push
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: docker/Dockerfile.frontend
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            VERSION=${{ steps.version.outputs.value }}
-            COMMIT=${{ github.sha }}
-          cache-from: type=gha,scope=frontend
-          cache-to: type=gha,mode=max,scope=frontend
-
+  # ---------------------------------------------------------------------------
+  # 4. Publish Helm chart – uses explicit --version and --app-version so the
+  #    OCI artifact is always correct regardless of Chart.yaml on disk.
+  # ---------------------------------------------------------------------------
   publish-helm:
     name: Publish Helm Chart
-    needs: release
-    if: needs.release.result == 'success' && needs.release.outputs.version != ''
+    needs: [ resolve-version, build-image ]
+    if: needs.resolve-version.outputs.semver != ''
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -167,6 +234,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.resolve-version.outputs.version }}
 
       - name: Set up Helm
         uses: azure/setup-helm@v4
@@ -175,38 +244,47 @@ jobs:
         run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io --username ${{ github.actor }} --password-stdin
 
       - name: Update chart dependencies
-        run: |
-          helm dependency update helm/notesbase
-          # Helm v4 requires dependencies to be unpacked (not just tarballs)
-          find helm/notesbase/charts -name '*.tgz' -exec tar -xzf {} -C helm/notesbase/charts/ \;
+        run: helm dependency update helm/notesbase
 
       - name: Package chart
+        env:
+          SEMVER: ${{ needs.resolve-version.outputs.semver }}
+          VERSION: ${{ needs.resolve-version.outputs.version }}
         run: |
           helm package helm/notesbase \
-            --version ${{ needs.release.outputs.version }} \
-            --app-version v${{ needs.release.outputs.version }}
+            --version "${SEMVER}" \
+            --app-version "${VERSION}"
 
       - name: Push chart to GHCR
-        run: helm push notesbase-${{ needs.release.outputs.version }}.tgz oci://ghcr.io/${{ env.OWNER }}/charts
+        env:
+          SEMVER: ${{ needs.resolve-version.outputs.semver }}
+        run: helm push "notesbase-${SEMVER}.tgz" "oci://ghcr.io/${{ env.OWNER }}/charts"
 
-      - name: Upload chart to release
+      - name: Upload chart to GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.resolve-version.outputs.version }}
+          SEMVER: ${{ needs.resolve-version.outputs.semver }}
         run: |
-          gh release upload v${{ needs.release.outputs.version }} \
-            notesbase-${{ needs.release.outputs.version }}.tgz \
+          gh release upload "${VERSION}" \
+            "notesbase-${SEMVER}.tgz" \
             --clobber
 
+  # ---------------------------------------------------------------------------
+  # 5. Release assets – Go binaries + compose file attached to the GH release.
+  # ---------------------------------------------------------------------------
   release-assets:
     name: Release Assets
-    needs: release
-    if: needs.release.result == 'success' && needs.release.outputs.version != ''
+    needs: resolve-version
+    if: needs.resolve-version.outputs.version != ''
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.resolve-version.outputs.version }}
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -215,8 +293,10 @@ jobs:
           cache-dependency-path: backend/go.sum
 
       - name: Build backend binaries
+        env:
+          VERSION: ${{ needs.resolve-version.outputs.version }}
         run: |
-          LDFLAGS="-s -w -X main.version=v${{ needs.release.outputs.version }} -X main.commit=${{ github.sha }}"
+          LDFLAGS="-s -w -X main.version=${VERSION} -X main.commit=${{ github.sha }}"
           mkdir -p dist
           cd backend
           GOOS=linux GOARCH=amd64 go build -ldflags="$LDFLAGS" -o ../dist/notesbase-server-linux-amd64 ./cmd/server
@@ -225,8 +305,9 @@ jobs:
       - name: Upload release assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.resolve-version.outputs.version }}
         run: |
-          gh release upload v${{ needs.release.outputs.version }} \
+          gh release upload "${VERSION}" \
             dist/notesbase-server-linux-amd64 \
             dist/notesbase-server-linux-arm64 \
             compose.yml \

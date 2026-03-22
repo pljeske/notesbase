@@ -25,7 +25,7 @@ spec:
         fsGroup: 65532
       containers:
         - name: backend
-          image: "{{ .Values.image.registry }}/{{ .Values.image.owner }}/notesbase-backend:{{ .Values.image.tag }}"
+          image: "{{ .Values.image.registry }}/{{ .Values.image.owner }}/notesbase-backend:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: http

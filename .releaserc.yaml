@@ -1,11 +1,12 @@
 plugins:
   - name: "@go-semantic-release/commit-analyzer-cz"
     options:
-      # feat: → minor, fix: → patch, feat!/fix! or BREAKING CHANGE → major
+      # feat:  → minor
+      # fix:   → patch
+      # feat!/fix! or BREAKING CHANGE footer → major
       # chore:, docs:, style:, refactor:, test:, ci: → no release
       typeFeatures: [feat]
-      typeBugFixes: [ fix,chore,refactor,ci ]
-      typeBreaking: []   # handled via ! suffix and BREAKING CHANGE footer
+      typeBugFixes: [ fix ]
 
   - name: "@go-semantic-release/changelog-generator-default"
 

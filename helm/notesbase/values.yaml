@@ -1,7 +1,7 @@
 image:
   registry: ghcr.io
   owner: "pljeske"
-  tag: latest
+  tag: ""
   pullPolicy: IfNotPresent
 
 backend:
