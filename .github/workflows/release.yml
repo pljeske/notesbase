@@ -51,7 +51,7 @@ jobs:
       # source. The published Helm chart gets the correct appVersion via
       # `helm package --app-version` regardless.
       - name: Sync Chart.yaml appVersion on main
-        if: steps.release.outputs.released == 'true'
+        if: steps.release.outputs.version != ''
         env:
           VERSION: ${{ steps.release.outputs.version }}
         run: |
