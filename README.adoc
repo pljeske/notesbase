@@ -23,8 +23,8 @@ Vibe coded simple but scalable notes app.
 - Advanced search filters (`tag:`, `before:`, `after:`)
 
 === Users & Security
-- Password reset flow
 - Encryption
+- Backup and restore from backup
 
 === Customization
 - Dark mode

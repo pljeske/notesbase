@@ -1,5 +1,6 @@
 import type {Editor, Range} from '@tiptap/core';
 import {Node} from '@tiptap/core';
+import {PluginKey} from '@tiptap/pm/state';
 import {ReactNodeViewRenderer, ReactRenderer} from '@tiptap/react';
 import Suggestion from '@tiptap/suggestion';
 import tippy, {type Instance} from 'tippy.js';
@@ -8,6 +9,8 @@ import {usePageStore} from '../../stores/pageStore';
 import type {PageMentionItem} from './PageMentionList';
 import {PageMentionList} from './PageMentionList';
 import {PageMentionView} from './PageMentionView';
+
+const pageMentionPluginKey = new PluginKey('pageMentionSuggestion');
 
 const suggestionOptions = {
   char: '[[',
@@ -129,6 +132,7 @@ export const PageMention = Node.create({
     return [
       Suggestion({
         editor: this.editor,
+        pluginKey: pageMentionPluginKey,
         ...suggestionOptions,
       }),
     ];

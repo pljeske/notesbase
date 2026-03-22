@@ -61,7 +61,7 @@ export function Editor({content, onUpdate, pageTitle, onTitleChange, pageId, pag
   }, []);
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({codeBlock: false}),
+      StarterKit.configure({codeBlock: false, link: false, underline: false}),
       CodeBlockWithLanguage,
       Placeholder.configure({
         placeholder: 'Type "/" for commands...',
