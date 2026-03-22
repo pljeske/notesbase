@@ -46,7 +46,8 @@ jobs:
           # Required: the updater-helm and updater-npm plugins in .releaserc.yaml
           # need the --update flag (via update-file) to activate. Without this,
           # the plugins warn and the action does not set step outputs.
-          update-file: helm/notesbase/Chart.yaml,frontend/package.json
+          update-file: helm/notesbase/Chart.yaml
+          custom-arguments: "--update frontend/package.json"
 
       # The updater-helm plugin only touches `version`. Patch `appVersion` on
       # main so the working tree stays accurate for anyone installing from
