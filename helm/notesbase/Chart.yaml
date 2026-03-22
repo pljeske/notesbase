@@ -3,14 +3,12 @@ name: notesbase
 description: Self-hosted notes application with rich text editing and file uploads
 type: application
 version: 0.2.0
-appVersion: "v0.13.1"
-
+appVersion: "v0.14.4"
 dependencies:
   - name: postgres
     version: "1.6.1"
     repository: https://groundhog2k.github.io/helm-charts/
     condition: postgresql.enabled
-
   - name: minio
     version: "5.4.0"
     repository: https://charts.min.io/
