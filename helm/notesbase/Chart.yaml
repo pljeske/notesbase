@@ -2,8 +2,8 @@ apiVersion: v2
 name: notesbase
 description: Self-hosted notes application with rich text editing and file uploads
 type: application
-version: 0.1.0
-appVersion: "latest"
+version: 0.2.0
+appVersion: "v0.12.1"
 
 dependencies:
   - name: postgres
