@@ -43,9 +43,6 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           allow-initial-development-versions: true
           changelog-file: CHANGELOG.md
-          # Required: the updater-helm and updater-npm plugins in .releaserc.yaml
-          # need the --update flag (via update-file) to activate. Without this,
-          # the plugins warn and the action does not set step outputs.
           update-file: helm/notesbase/Chart.yaml
           custom-arguments: "--update frontend/package.json"
 
@@ -142,6 +139,8 @@ jobs:
 
   # ---------------------------------------------------------------------------
   # 2. Resolve version – single source of truth for all downstream jobs.
+  #    Uses always() because exactly one of release/manual-release will be
+  #    skipped depending on the trigger event.
   # ---------------------------------------------------------------------------
   resolve-version:
     name: Resolve Version
@@ -171,11 +170,16 @@ jobs:
 
   # ---------------------------------------------------------------------------
   # 3. Build container images (backend + frontend in parallel via matrix).
+  #    Uses always() to break the skipped-ancestor chain from resolve-version,
+  #    then checks outputs explicitly to decide whether to actually run.
   # ---------------------------------------------------------------------------
   build-image:
     name: Build ${{ matrix.component }} Image
     needs: resolve-version
-    if: needs.resolve-version.outputs.version != ''
+    if: >-
+      always() &&
+      needs.resolve-version.result == 'success' &&
+      needs.resolve-version.outputs.version != ''
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -231,7 +235,11 @@ jobs:
   publish-helm:
     name: Publish Helm Chart
     needs: [ resolve-version, build-image ]
-    if: needs.resolve-version.outputs.semver != ''
+    if: >-
+      always() &&
+      needs.resolve-version.result == 'success' &&
+      needs.resolve-version.outputs.semver != '' &&
+      needs.build-image.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -281,7 +289,10 @@ jobs:
   release-assets:
     name: Release Assets
     needs: resolve-version
-    if: needs.resolve-version.outputs.version != ''
+    if: >-
+      always() &&
+      needs.resolve-version.result == 'success' &&
+      needs.resolve-version.outputs.version != ''
     runs-on: ubuntu-latest
     permissions:
       contents: write
