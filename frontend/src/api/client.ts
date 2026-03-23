@@ -13,21 +13,26 @@ function getAuthHeaders(): Record<string, string> {
   return headers;
 }
 
+interface RequestOptions extends RequestInit {
+  skipRefresh?: boolean;
+}
+
 export async function request<T>(
   path: string,
-  options?: RequestInit
+  options?: RequestOptions
 ): Promise<T> {
+  const {skipRefresh, ...fetchOptions} = options ?? {};
   const headers = {
     ...getAuthHeaders(),
-    ...options?.headers,
+    ...fetchOptions.headers,
   };
 
   const response = await fetch(`${BASE_URL}${path}`, {
-    ...options,
+    ...fetchOptions,
     headers,
   });
 
-  if (response.status === 401) {
+  if (response.status === 401 && !skipRefresh) {
     // Try to refresh the token
     const refreshed = await useAuthStore.getState().tryRefreshToken();
     if (refreshed) {

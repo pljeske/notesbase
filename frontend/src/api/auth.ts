@@ -35,18 +35,21 @@ export const authApi = {
     request<AuthResponse>('/api/auth/register', {
       method: 'POST',
       body: JSON.stringify(data),
+      skipRefresh: true,
     }),
 
   login: (data: LoginData) =>
     request<AuthResponse>('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify(data),
+      skipRefresh: true,
     }),
 
   refresh: (refreshToken: string) =>
     request<AuthResponse>('/api/auth/refresh', {
       method: 'POST',
       body: JSON.stringify({refresh_token: refreshToken}),
+      skipRefresh: true,
     }),
 
   forgotPassword: (email: string) =>
