@@ -225,8 +225,8 @@ jobs:
           build-args: |
             VERSION=${{ needs.resolve-version.outputs.version }}
             COMMIT=${{ github.sha }}
-          cache-from: type=gha,scope=${{ matrix.component }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.component }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.OWNER }}/notesbase-${{ matrix.component }}:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.OWNER }}/notesbase-${{ matrix.component }}:buildcache,mode=max
 
   # ---------------------------------------------------------------------------
   # 4. Publish Helm chart – uses explicit --version and --app-version so the
