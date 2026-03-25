@@ -1,5 +1,8 @@
 import {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
+import type {DragEndEvent} from '@dnd-kit/core';
+import {DndContext, PointerSensor, useSensor, useSensors} from '@dnd-kit/core';
+import {SortableContext, verticalListSortingStrategy} from '@dnd-kit/sortable';
 import {usePageStore} from '../../stores/pageStore';
 import {PageTreeItem} from './PageTreeItem';
 import {TagSection} from './TagSection';
@@ -9,9 +12,24 @@ import {SearchBar} from './SearchBar';
 import {DownloadSimpleIcon} from '@phosphor-icons/react';
 
 export function Sidebar() {
-  const {tree, isTreeLoading, fetchTree, createPage} = usePageStore();
+  const {tree, isTreeLoading, fetchTree, createPage, movePage} = usePageStore();
   const navigate = useNavigate();
   const [exportOpen, setExportOpen] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {activationConstraint: {distance: 8}}),
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const {active, over} = event;
+    if (!over || active.id === over.id) return;
+    const activeParentId =
+      (active.data.current as { parentId: string | null } | undefined)?.parentId ?? null;
+    const overParentId =
+      (over.data.current as { parentId: string | null } | undefined)?.parentId ?? null;
+    if (activeParentId !== overParentId) return;
+    void movePage(String(active.id), String(over.id), activeParentId);
+  };
 
   useEffect(() => {
     fetchTree();
@@ -63,9 +81,16 @@ export function Sidebar() {
               </button>
             </div>
           ) : (
-            tree.map((node) => (
-              <PageTreeItem key={node.id} node={node} depth={0}/>
-            ))
+            <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+              <SortableContext
+                items={tree.map((n) => n.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                {tree.map((node) => (
+                  <PageTreeItem key={node.id} node={node} depth={0} parentId={null}/>
+                ))}
+              </SortableContext>
+            </DndContext>
           )}
         </div>
         <TagSection/>
