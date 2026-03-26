@@ -313,6 +313,45 @@ func (r *PostgresPageRepository) Move(ctx context.Context, userID uuid.UUID, id 
 	}
 	defer tx.Rollback(ctx)
 
+	// Fetch the page's current position and parent so we can shift siblings correctly.
+	var currentPos int
+	var currentParentID *uuid.UUID
+	err = tx.QueryRow(ctx,
+		`SELECT position, parent_id FROM pages WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL`,
+		id, userID).Scan(&currentPos, &currentParentID)
+	if err != nil {
+		return fmt.Errorf("get current state: %w", err)
+	}
+
+	// For same-parent reorders, shift the siblings between old and new position to
+	// keep positions unique before we place the moved page. Without this, the
+	// resequence step would break ties by updated_at and land the page in the
+	// wrong slot.
+	isSameParent := (currentParentID == nil && req.ParentID == nil) ||
+		(currentParentID != nil && req.ParentID != nil && *currentParentID == *req.ParentID)
+	if isSameParent && req.Position != currentPos {
+		if req.Position < currentPos {
+			// Moving up: push items in [new_pos, old_pos) one step down.
+			_, err = tx.Exec(ctx,
+				`UPDATE pages SET position = position + 1
+				 WHERE user_id = $1 AND parent_id IS NOT DISTINCT FROM $2
+				   AND deleted_at IS NULL AND id != $3
+				   AND position >= $4 AND position < $5`,
+				userID, req.ParentID, id, req.Position, currentPos)
+		} else {
+			// Moving down: pull items in (old_pos, new_pos] one step up.
+			_, err = tx.Exec(ctx,
+				`UPDATE pages SET position = position - 1
+				 WHERE user_id = $1 AND parent_id IS NOT DISTINCT FROM $2
+				   AND deleted_at IS NULL AND id != $3
+				   AND position > $4 AND position <= $5`,
+				userID, req.ParentID, id, currentPos, req.Position)
+		}
+		if err != nil {
+			return fmt.Errorf("shift siblings: %w", err)
+		}
+	}
+
 	tag, err := tx.Exec(ctx,
 		`UPDATE pages SET parent_id = $1, position = $2 WHERE id = $3 AND user_id = $4 AND deleted_at IS NULL`,
 		req.ParentID, req.Position, id, userID)

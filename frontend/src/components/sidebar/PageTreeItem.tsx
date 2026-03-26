@@ -1,5 +1,7 @@
 import {useEffect, useRef, useState} from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
+import {SortableContext, useSortable, verticalListSortingStrategy} from '@dnd-kit/sortable';
+import {CSS} from '@dnd-kit/utilities';
 import {usePageStore} from '../../stores/pageStore';
 import {PageIcon} from '../../utils/icons';
 import type {PageTreeNode} from '../../types/page';
@@ -7,9 +9,10 @@ import type {PageTreeNode} from '../../types/page';
 interface PageTreeItemProps {
   node: PageTreeNode;
   depth: number;
+  parentId: string | null;
 }
 
-export function PageTreeItem({node, depth}: PageTreeItemProps) {
+export function PageTreeItem({node, depth, parentId}: PageTreeItemProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -17,6 +20,11 @@ export function PageTreeItem({node, depth}: PageTreeItemProps) {
   const {pageId} = useParams();
   const {createPage, deletePage, duplicatePage} = usePageStore();
   const isActive = pageId === node.id;
+
+  const {attributes, listeners, setNodeRef, transform, transition, isDragging} = useSortable({
+    id: node.id,
+    data: {parentId},
+  });
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -54,16 +62,36 @@ export function PageTreeItem({node, depth}: PageTreeItemProps) {
   };
 
   return (
-    <div>
+    <div
+      ref={setNodeRef}
+      style={{transform: CSS.Transform.toString(transform), transition}}
+    >
       <div
         className={`flex items-center gap-1 py-1 rounded cursor-pointer group text-sm ${
-          isActive
-            ? 'bg-gray-200 text-gray-900'
-            : 'text-gray-600 hover:bg-gray-100'
+          isDragging
+            ? 'opacity-40'
+            : isActive
+              ? 'bg-gray-200 text-gray-900'
+              : 'text-gray-600 hover:bg-gray-100'
         }`}
         style={{paddingLeft: `${depth * 16 + 8}px`, paddingRight: '8px'}}
         onClick={() => navigate(`/page/${node.id}`)}
       >
+        <span
+          className="w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-gray-300 shrink-0"
+          {...attributes}
+          {...listeners}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor">
+            <circle cx="3" cy="3" r="1.5"/>
+            <circle cx="7" cy="3" r="1.5"/>
+            <circle cx="3" cy="7" r="1.5"/>
+            <circle cx="7" cy="7" r="1.5"/>
+            <circle cx="3" cy="11" r="1.5"/>
+            <circle cx="7" cy="11" r="1.5"/>
+          </svg>
+        </span>
         {node.children.length > 0 ? (
           <button
             className="w-5 h-5 flex items-center justify-center text-gray-400 hover:text-gray-600 shrink-0"
@@ -120,10 +148,16 @@ export function PageTreeItem({node, depth}: PageTreeItemProps) {
           )}
         </div>
       </div>
-      {isExpanded &&
-        node.children.map((child) => (
-          <PageTreeItem key={child.id} node={child} depth={depth + 1}/>
-        ))}
+      {isExpanded && node.children.length > 0 && (
+        <SortableContext
+          items={node.children.map((c) => c.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          {node.children.map((child) => (
+            <PageTreeItem key={child.id} node={child} depth={depth + 1} parentId={node.id}/>
+          ))}
+        </SortableContext>
+      )}
     </div>
   );
 }

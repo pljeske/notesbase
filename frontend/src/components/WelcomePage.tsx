@@ -1,9 +1,17 @@
+import {useEffect} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {usePageStore} from '../stores/pageStore';
 
 export function WelcomePage() {
   const navigate = useNavigate();
   const createPage = usePageStore((s) => s.createPage);
+  const tree = usePageStore((s) => s.tree);
+
+  useEffect(() => {
+    if (tree.length > 0) {
+      navigate(`/page/${tree[0].id}`, {replace: true});
+    }
+  }, [tree, navigate]);
 
   const handleCreate = async () => {
     const page = await createPage(null);
@@ -21,7 +29,7 @@ export function WelcomePage() {
         onClick={handleCreate}
         className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm hover:bg-gray-800 transition-colors"
       >
-        Create your first page
+        Create a page
       </button>
     </div>
   );

@@ -1,4 +1,5 @@
 import {create} from 'zustand';
+import {arrayMove} from '@dnd-kit/sortable';
 import {pagesApi} from '../api/pages';
 import type {JSONContent, Page, PageTreeNode, TrashedPage, UpdatePageRequest} from '../types/page';
 
@@ -21,6 +22,7 @@ interface PageState {
   fetchTrash: () => Promise<void>;
   restorePage: (id: string) => Promise<void>;
   permanentDeletePage: (id: string) => Promise<void>;
+  movePage: (activeId: string, overId: string, parentId: string | null) => Promise<void>;
   setActivePage: (page: Page | null) => void;
   setSaveStatus: (status: 'idle' | 'saving' | 'saved' | 'error') => void;
   updateActivePageLocal: (title?: string, content?: JSONContent) => void;
@@ -31,6 +33,30 @@ let currentPageRequestId = '';
 // Tracks the save-status reset timers keyed by page ID so rapid page switches
 // don't cancel the wrong page's indicator.
 const saveStatusTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+function findChildren(nodes: PageTreeNode[], parentId: string): PageTreeNode[] | null {
+  for (const node of nodes) {
+    if (node.id === parentId) return node.children;
+    const found = findChildren(node.children, parentId);
+    if (found) return found;
+  }
+  return null;
+}
+
+function setChildrenInTree(
+  nodes: PageTreeNode[],
+  parentId: string | null,
+  newChildren: PageTreeNode[],
+): PageTreeNode[] {
+  if (parentId === null) return newChildren;
+  return nodes.map((node) => {
+    if (node.id === parentId) return {...node, children: newChildren};
+    if (node.children.length > 0) {
+      return {...node, children: setChildrenInTree(node.children, parentId, newChildren)};
+    }
+    return node;
+  });
+}
 
 function patchTreeNode(
   nodes: PageTreeNode[],
@@ -161,6 +187,25 @@ export const usePageStore = create<PageState>((set, get) => ({
   permanentDeletePage: async (id: string) => {
     await pagesApi.permanentDelete(id);
     set((state) => ({trash: state.trash.filter((p) => p.id !== id)}));
+  },
+
+  movePage: async (activeId, overId, parentId) => {
+    const {tree} = get();
+    const siblings = parentId === null ? tree : findChildren(tree, parentId);
+    if (!siblings) return;
+
+    const oldIndex = siblings.findIndex((n) => n.id === activeId);
+    const newIndex = siblings.findIndex((n) => n.id === overId);
+    if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
+
+    const newSiblings = arrayMove([...siblings], oldIndex, newIndex);
+    set({tree: setChildrenInTree(tree, parentId, newSiblings)});
+
+    try {
+      await pagesApi.move(activeId, {parent_id: parentId, position: newIndex});
+    } catch {
+      await get().fetchTree();
+    }
   },
 
   setActivePage: (page) => set({activePage: page}),
