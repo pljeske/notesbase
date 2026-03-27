@@ -45,7 +45,7 @@ export function Sidebar() {
     <aside className="w-64 h-screen bg-gray-50 border-r border-gray-200 flex flex-col shrink-0">
       <div className="p-4 flex items-center justify-between border-b border-gray-200">
         <h1 className="text-sm font-semibold text-gray-700 tracking-wide">
-          notesbase
+          <img src="/favicon/favicon.svg" alt="notesbase logo" className="w-6 h-6"/>
         </h1>
         <div className="flex items-center gap-1">
           <button
