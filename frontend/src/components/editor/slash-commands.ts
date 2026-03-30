@@ -161,6 +161,48 @@ export const slashCommands: SlashCommandItem[] = [
     },
   },
   {
+    title: 'Info',
+    description: 'Informational callout block',
+    icon: '\u2139\uFE0F',
+    searchTerms: ['info', 'callout', 'admonition', 'note', 'information'],
+    command: ({editor, range}) => {
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .insertContent({type: 'callout', attrs: {type: 'info'}, content: [{type: 'paragraph'}]})
+        .run();
+    },
+  },
+  {
+    title: 'Warning',
+    description: 'Warning callout block',
+    icon: '\u26A0\uFE0F',
+    searchTerms: ['warning', 'callout', 'admonition', 'caution', 'alert'],
+    command: ({editor, range}) => {
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .insertContent({type: 'callout', attrs: {type: 'warning'}, content: [{type: 'paragraph'}]})
+        .run();
+    },
+  },
+  {
+    title: 'Tip',
+    description: 'Tip callout block',
+    icon: '\uD83D\uDCA1',
+    searchTerms: ['tip', 'callout', 'admonition', 'hint', 'suggestion'],
+    command: ({editor, range}) => {
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .insertContent({type: 'callout', attrs: {type: 'tip'}, content: [{type: 'paragraph'}]})
+        .run();
+    },
+  },
+  {
     title: 'File',
     description: 'Upload any file as a download',
     icon: '\uD83D\uDCCE',

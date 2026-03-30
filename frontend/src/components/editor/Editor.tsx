@@ -12,6 +12,7 @@ import {SlashCommand} from './SlashCommand';
 import {PageMention} from './PageMention';
 import {PdfBlock} from './PdfBlock';
 import {FileBlock} from './FileBlock';
+import {CalloutBlock} from './CalloutBlock';
 import {CodeBlockView} from './CodeBlockView';
 import {IconPicker} from './IconPicker';
 import {FormattingToolbar} from './FormattingToolbar';
@@ -71,6 +72,7 @@ export function Editor({content, onUpdate, pageTitle, onTitleChange, pageId, pag
       AuthImage,
       PdfBlock,
       FileBlock,
+      CalloutBlock,
       SlashCommand,
       PageMention,
     ],

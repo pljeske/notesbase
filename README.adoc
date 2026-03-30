@@ -10,20 +10,18 @@ Vibe coded simple but scalable notes app.
 
 === Editor
 - Table support
-- Callout/admonition blocks (info, warning, tip)
 - Rendering PDFs directly on the page
 
 === Navigation & Organization
 - Breadcrumbs on page header
 - Favorites / pinned pages
-- Sidebar drag-and-drop reordering
-- Page linking with `+[[page name]]+` mentions and backlinks
 
 === Search
 - Advanced search filters (`tag:`, `before:`, `after:`)
 
 === Users & Security
-- Encryption
+
+- Encryption (special encrypted page type?)
 - Backup and restore from backup
 
 === Customization
