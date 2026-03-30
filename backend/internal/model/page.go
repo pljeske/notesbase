@@ -8,31 +8,33 @@ import (
 )
 
 type Page struct {
-	ID        uuid.UUID       `json:"id"`
-	ParentID  *uuid.UUID      `json:"parent_id"`
-	Title     string          `json:"title"`
-	Content   json.RawMessage `json:"content"`
-	Position  int             `json:"position"`
-	Icon      *string         `json:"icon"`
-	IconColor *string         `json:"icon_color"`
-	Tags      []Tag           `json:"tags"`
-	CreatedAt time.Time       `json:"created_at"`
-	UpdatedAt time.Time       `json:"updated_at"`
-	DeletedAt *time.Time      `json:"deleted_at,omitempty"`
+	ID          uuid.UUID       `json:"id"`
+	ParentID    *uuid.UUID      `json:"parent_id"`
+	Title       string          `json:"title"`
+	Content     json.RawMessage `json:"content"`
+	Position    int             `json:"position"`
+	Icon        *string         `json:"icon"`
+	IconColor   *string         `json:"icon_color"`
+	IsEncrypted bool            `json:"is_encrypted"`
+	Tags        []Tag           `json:"tags"`
+	CreatedAt   time.Time       `json:"created_at"`
+	UpdatedAt   time.Time       `json:"updated_at"`
+	DeletedAt   *time.Time      `json:"deleted_at,omitempty"`
 }
 
 type PageTreeNode struct {
-	ID        uuid.UUID      `json:"id"`
-	ParentID  *uuid.UUID     `json:"parent_id"`
-	Title     string         `json:"title"`
-	Icon      *string        `json:"icon"`
-	IconColor *string        `json:"icon_color"`
-	Position  int            `json:"position"`
-	Tags      []Tag          `json:"tags"`
-	Children  []PageTreeNode `json:"children"`
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
-	DeletedAt *time.Time     `json:"deleted_at,omitempty"`
+	ID          uuid.UUID      `json:"id"`
+	ParentID    *uuid.UUID     `json:"parent_id"`
+	Title       string         `json:"title"`
+	Icon        *string        `json:"icon"`
+	IconColor   *string        `json:"icon_color"`
+	IsEncrypted bool           `json:"is_encrypted"`
+	Position    int            `json:"position"`
+	Tags        []Tag          `json:"tags"`
+	Children    []PageTreeNode `json:"children"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
+	DeletedAt   *time.Time     `json:"deleted_at,omitempty"`
 }
 
 type TrashedPage struct {
@@ -49,11 +51,12 @@ type CreatePageRequest struct {
 }
 
 type UpdatePageRequest struct {
-	Title     *string          `json:"title,omitempty"`
-	Content   *json.RawMessage `json:"content,omitempty"`
-	Icon      *string          `json:"icon,omitempty"`
-	IconColor *string          `json:"icon_color,omitempty"`
-	TagIDs    []uuid.UUID      `json:"tag_ids,omitempty"`
+	Title       *string          `json:"title,omitempty"`
+	Content     *json.RawMessage `json:"content,omitempty"`
+	Icon        *string          `json:"icon,omitempty"`
+	IconColor   *string          `json:"icon_color,omitempty"`
+	IsEncrypted *bool            `json:"is_encrypted,omitempty"`
+	TagIDs      []uuid.UUID      `json:"tag_ids,omitempty"`
 }
 
 type MovePageRequest struct {

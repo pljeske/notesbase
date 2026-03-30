@@ -9,6 +9,7 @@ export interface Page {
   content: JSONContent | null;
   icon: string | null;
   icon_color: string | null;
+  is_encrypted: boolean;
   position: number;
   tags: Tag[];
   created_at: string;
@@ -22,6 +23,7 @@ export interface PageTreeNode {
   title: string;
   icon: string | null;
   icon_color: string | null;
+  is_encrypted: boolean;
   position: number;
   tags: Tag[];
   children: PageTreeNode[];
@@ -62,6 +64,7 @@ export interface UpdatePageRequest {
   content?: JSONContent;
   icon?: string;
   icon_color?: string;
+  is_encrypted?: boolean;
   tag_ids?: string[];
 }
 

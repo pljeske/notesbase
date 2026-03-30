@@ -328,16 +328,17 @@ func buildTree(pages []model.Page, tagsByPage map[uuid.UUID][]model.Tag) []model
 			tags = []model.Tag{}
 		}
 		node := model.PageTreeNode{
-			ID:        p.ID,
-			ParentID:  p.ParentID,
-			Title:     p.Title,
-			Icon:      p.Icon,
-			IconColor: p.IconColor,
-			Position:  p.Position,
-			Tags:      tags,
-			Children:  []model.PageTreeNode{},
-			CreatedAt: p.CreatedAt,
-			UpdatedAt: p.UpdatedAt,
+			ID:          p.ID,
+			ParentID:    p.ParentID,
+			Title:       p.Title,
+			Icon:        p.Icon,
+			IconColor:   p.IconColor,
+			IsEncrypted: p.IsEncrypted,
+			Position:    p.Position,
+			Tags:        tags,
+			Children:    []model.PageTreeNode{},
+			CreatedAt:   p.CreatedAt,
+			UpdatedAt:   p.UpdatedAt,
 		}
 		nodeMap[p.ID] = &node
 	}

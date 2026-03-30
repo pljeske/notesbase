@@ -4,6 +4,7 @@ import {SortableContext, useSortable, verticalListSortingStrategy} from '@dnd-ki
 import {CSS} from '@dnd-kit/utilities';
 import {usePageStore} from '../../stores/pageStore';
 import {PageIcon} from '../../utils/icons';
+import {LockSimpleIcon} from '@phosphor-icons/react';
 import type {PageTreeNode} from '../../types/page';
 
 interface PageTreeItemProps {
@@ -109,6 +110,11 @@ export function PageTreeItem({node, depth, parentId}: PageTreeItemProps) {
             <PageIcon icon={node.icon} color={node.icon_color} size={13} weight="light"/>
           </span>
           <span className="truncate">{node.title || 'Untitled'}</span>
+          {node.is_encrypted && (
+            <span className="shrink-0 ml-0.5" style={{color: 'var(--sidebar-text-dim)'}}>
+              <LockSimpleIcon size={10} weight="fill"/>
+            </span>
+          )}
         </span>
 
         {/* context menu */}

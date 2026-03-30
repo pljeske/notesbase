@@ -132,13 +132,14 @@ export const usePageStore = create<PageState>((set, get) => ({
         set({activePage: updatedPage});
       }
       set({saveStatus: 'saved'});
-      if (data.title !== undefined || data.icon !== undefined || data.icon_color !== undefined) {
+      if (data.title !== undefined || data.icon !== undefined || data.icon_color !== undefined || data.is_encrypted !== undefined) {
         // Update the affected tree node in-place rather than re-fetching the whole tree
         set((state) => ({
           tree: patchTreeNode(state.tree, id, {
             ...(data.title !== undefined && {title: data.title}),
             ...(data.icon !== undefined && {icon: updatedPage.icon}),
             ...(data.icon_color !== undefined && {icon_color: updatedPage.icon_color}),
+            ...(data.is_encrypted !== undefined && {is_encrypted: updatedPage.is_encrypted}),
           }),
         }));
       }

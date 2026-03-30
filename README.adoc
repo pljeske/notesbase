@@ -21,8 +21,8 @@ Vibe coded simple but scalable notes app.
 
 === Users & Security
 
-- Encryption (special encrypted page type?)
 - Backup and restore from backup
+- Improve encrypted page workflow
 
 === Customization
 - Dark mode
