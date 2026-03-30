@@ -4,8 +4,23 @@ image:
   tag: ""
   pullPolicy: IfNotPresent
 
+# Image pull secrets for private registries (e.g. [{name: regcred}])
+imagePullSecrets: []
+
+# Optional: create a dedicated ServiceAccount for the application pods.
+# Set create=true and optionally provide a name; defaults to "<release-name>".
+# Set annotations to attach cloud IAM roles (e.g. IRSA, Workload Identity).
+serviceAccount:
+  create: false
+  name: ""
+  annotations: {}
+
 backend:
   replicaCount: 1
+  podAnnotations: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
   resources:
     requests:
       cpu: 100m
@@ -16,6 +31,10 @@ backend:
 
 frontend:
   replicaCount: 1
+  podAnnotations: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
   resources:
     requests:
       cpu: 100m
@@ -29,13 +48,17 @@ ingress:
   annotations: {}
   className: ""
   host: "notesbase.example.com"
-  tls: [ ]
+  tls: []
   #  - secretName: notesbase-tls
   #    hosts:
   #      - notesbase.example.com
 
 config:
-  # Required: set a strong random secret (e.g. openssl rand -hex 32)
+  # Name of a pre-existing Secret to use instead of the chart-managed one.
+  # The secret must contain: DATABASE_URL, JWT_SECRET, MINIO_ACCESS_KEY, MINIO_SECRET_KEY.
+  # When set, the chart will not create its own Secret.
+  existingSecret: ""
+  # Required when existingSecret is not set: strong random value (e.g. openssl rand -hex 32)
   jwtSecret: ""
   # CORS origin(s) sent to browsers. Defaults to https://<ingress.host> when
   # ingress.host is set. Override if you need multiple origins.
@@ -44,6 +67,17 @@ config:
   minioBucket: notesbase-files
   minioUseSSL: "false"
   maxUploadSize: "52428800" # bytes
+
+# External PostgreSQL — used when postgres.enabled=false.
+# Provide a full connection URL: postgres://user:pass@host:5432/db?sslmode=require
+externalDatabase:
+  url: ""
+
+# External MinIO/S3 — used when minio.enabled=false.
+externalMinio:
+  endpoint: ""   # e.g. s3.amazonaws.com or minio.example.com:9000
+  accessKey: ""
+  secretKey: ""
 
 # groundhog2k PostgreSQL subchart — https://github.com/groundhog2k/helm-charts/tree/master/charts/postgres
 postgres:

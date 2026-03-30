@@ -3,14 +3,19 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ .Release.Name }}-notesbase
-  labels: {{ include "notesbase.labels" . | nindent 4 }}
-  annotations: {{ .Values.ingress.annotations | toYaml | nindent 4 }}
+  labels:
+    {{- include "notesbase.labels" . | nindent 4 }}
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   {{- if .Values.ingress.className }}
   ingressClassName: {{ .Values.ingress.className }}
   {{- end }}
   {{- if .Values.ingress.tls }}
-  tls: {{ toYaml .Values.ingress.tls | nindent 4 }}
+  tls:
+    {{- toYaml .Values.ingress.tls | nindent 4 }}
   {{- end }}
   rules:
     - host: {{ .Values.ingress.host | quote }}

@@ -16,9 +16,16 @@ spec:
       labels:
         {{- include "notesbase.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: backend
+      {{- with .Values.backend.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
     spec:
+      serviceAccountName: {{ include "notesbase.serviceAccountName" . }}
+      {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
-        - name: regcred
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       securityContext:
         runAsNonRoot: true
         runAsUser: 65532
@@ -47,7 +54,7 @@ spec:
               value: {{ include "notesbase.corsOrigins" . | quote }}
           envFrom:
             - secretRef:
-                name: {{ .Release.Name }}-notesbase
+                name: {{ include "notesbase.secretName" . }}
           readinessProbe:
             httpGet:
               path: /readyz
@@ -64,8 +71,20 @@ spec:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
             capabilities:
-              drop: [ "ALL" ]
+              drop: ["ALL"]
           {{- with .Values.backend.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+      {{- with .Values.backend.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.backend.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.backend.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

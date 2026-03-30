@@ -1,0 +1,23 @@
+notesbase has been deployed!
+
+{{- $protocol := "http" }}
+{{- if .Values.ingress.tls }}{{- $protocol = "https" }}{{- end }}
+{{- if .Values.ingress.enabled }}
+
+  URL: {{ $protocol }}://{{ .Values.ingress.host }}
+{{- else }}
+
+  Ingress is disabled. Access the app via port-forward:
+    kubectl port-forward svc/{{ .Release.Name }}-frontend 8080:8080 -n {{ .Release.Namespace }}
+  Then open: http://localhost:8080
+{{- end }}
+
+The first user to register becomes the admin.
+
+{{- if not .Values.config.existingSecret }}
+
+NOTE: Secrets (JWT, database, MinIO credentials) are stored in a chart-managed
+Secret. For production, use an external secret manager and set:
+  config.existingSecret: <name-of-pre-created-secret>
+Required keys: DATABASE_URL, JWT_SECRET, MINIO_ACCESS_KEY, MINIO_SECRET_KEY
+{{- end }}
