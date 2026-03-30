@@ -1,6 +1,6 @@
 import {useEffect, useRef, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {MagnifyingGlass, X} from '@phosphor-icons/react';
+import {MagnifyingGlassIcon, XIcon} from '@phosphor-icons/react';
 import {pagesApi} from '../../api/pages';
 import {PageIcon} from '../../utils/icons';
 import type {SearchResult} from '../../types/page';
@@ -17,7 +17,6 @@ export function SearchBar() {
   const requestIdRef = useRef(0);
   const navigate = useNavigate();
 
-  // Debounced search
   useEffect(() => {
     const trimmed = query.trim();
     const myId = ++requestIdRef.current;
@@ -27,19 +26,25 @@ export function SearchBar() {
       setLoading(true);
       setSearchError(false);
       pagesApi.search(trimmed)
-        .then((r) => { if (requestIdRef.current === myId) { setResults(r); setActiveIndex(-1); } })
+        .then((r) => {
+          if (requestIdRef.current === myId) {
+            setResults(r);
+            setActiveIndex(-1);
+          }
+        })
         .catch(() => {
           if (requestIdRef.current === myId) {
             setResults([]);
             setSearchError(true);
           }
         })
-        .finally(() => { if (requestIdRef.current === myId) setLoading(false); });
+        .finally(() => {
+          if (requestIdRef.current === myId) setLoading(false);
+        });
     }, 250);
     return () => clearTimeout(timer);
   }, [query]);
 
-  // Close on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -77,54 +82,60 @@ export function SearchBar() {
   const showDropdown = open && query.trim().length > 0;
 
   return (
-    <div ref={containerRef} className="relative px-2 pb-2">
-      <div className={`flex items-center gap-1.5 h-7 px-2 rounded border text-xs transition-colors ${
-        open ? 'border-gray-300 bg-white' : 'border-transparent bg-gray-100 hover:bg-gray-200'
-      }`}>
-        <MagnifyingGlass size={12} weight="bold" className="text-gray-400 shrink-0"/>
+    <div ref={containerRef} className="relative px-2 pb-1.5">
+      <div className={`nb-search-wrap${open ? ' nb-focused' : ''}`}>
+        <MagnifyingGlassIcon size={11} weight="bold" className="nb-search-icon shrink-0"/>
         <input
           ref={inputRef}
           type="text"
-          placeholder="Search pages..."
+          placeholder="Search pages…"
           value={query}
-          onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setOpen(true);
+          }}
           onFocus={() => setOpen(true)}
           onKeyDown={handleKeyDown}
-          className="flex-1 bg-transparent outline-none text-gray-700 placeholder-gray-400 min-w-0"
+          className="nb-search-input"
         />
         {query && (
           <button
-            onClick={() => { setQuery(''); setResults([]); inputRef.current?.focus(); }}
-            className="shrink-0 text-gray-400 hover:text-gray-600"
+            onClick={() => {
+              setQuery('');
+              setResults([]);
+              inputRef.current?.focus();
+            }}
+            className="nb-search-clear shrink-0"
           >
-            <X size={10} weight="bold"/>
+            <XIcon size={10} weight="bold"/>
           </button>
         )}
       </div>
 
       {showDropdown && (
-        <div className="absolute left-2 right-2 top-full z-50 mt-0.5 bg-white border border-gray-200 rounded shadow-md overflow-hidden">
+        <div className="absolute left-2 right-2 top-full z-50 mt-1 nb-search-dropdown">
           {loading ? (
-            <div className="px-3 py-2 text-xs text-gray-400">Searching...</div>
+            <div className="nb-search-meta">Searching…</div>
           ) : searchError ? (
-            <div className="px-3 py-2 text-xs text-red-400">Search failed. Try again.</div>
+            <div className="nb-search-meta nb-error">Search failed. Try again.</div>
           ) : results.length === 0 ? (
-            <div className="px-3 py-2 text-xs text-gray-400">No results</div>
+            <div className="nb-search-meta">No results</div>
           ) : (
             <ul>
               {results.map((r, i) => (
                 <li key={r.id}>
                   <button
-                    onMouseDown={(e) => { e.preventDefault(); handleSelect(r.id); }}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      handleSelect(r.id);
+                    }}
                     onMouseEnter={() => setActiveIndex(i)}
-                    className={`w-full flex items-center gap-2 px-3 py-2 text-left text-xs transition-colors ${
-                      i === activeIndex ? 'bg-gray-100' : 'hover:bg-gray-50'
-                    }`}
+                    className={`nb-search-result${i === activeIndex ? ' nb-active' : ''}`}
                   >
-                    <span className="shrink-0 text-gray-400">
+                    <span className="nb-search-result-icon shrink-0">
                       <PageIcon icon={r.icon} color={r.icon_color} size={13} weight="light"/>
                     </span>
-                    <span className="truncate text-gray-700">{r.title || 'Untitled'}</span>
+                    <span className="nb-search-result-text">{r.title || 'Untitled'}</span>
                   </button>
                 </li>
               ))}

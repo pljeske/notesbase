@@ -9,37 +9,31 @@ export function AppLayout() {
   const logout = useAuthStore((s) => s.logout);
 
   return (
-    <div className="flex h-screen bg-white">
+    <div className="flex h-screen" style={{background: 'var(--content-bg)'}}>
       <Sidebar/>
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-10 flex items-center justify-between px-4 border-b border-gray-100 shrink-0">
+        <header className="h-9 flex items-center justify-between px-4 shrink-0 nb-content-header">
           <div className="flex items-center gap-2">
             {saveStatus === 'saving' && (
-              <span className="text-xs text-gray-400">Saving...</span>
+              <span className="nb-save-status" style={{color: '#a3b3a0'}}>Saving…</span>
             )}
             {saveStatus === 'saved' && (
-              <span className="text-xs text-green-500">Saved</span>
+              <span className="nb-save-status" style={{color: '#6ba07a'}}>Saved</span>
             )}
             {saveStatus === 'error' && (
-              <span className="text-xs text-red-500">Save failed</span>
+              <span className="nb-save-status" style={{color: '#f87171'}}>Save failed</span>
             )}
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             {user && (
-              <span className="text-xs text-gray-500">{user.name}</span>
+              <span className="nb-header-user">{user.name}</span>
             )}
             {user?.role === 'admin' && (
-              <Link
-                to="/admin"
-                className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
-              >
+              <Link to="/admin" className="nb-header-action">
                 Admin
               </Link>
             )}
-            <button
-              onClick={logout}
-              className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
-            >
+            <button onClick={logout} className="nb-header-action">
               Log out
             </button>
           </div>

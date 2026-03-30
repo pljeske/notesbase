@@ -42,23 +42,23 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="w-64 h-screen bg-gray-50 border-r border-gray-200 flex flex-col shrink-0">
-      <div className="p-4 flex items-center justify-between border-b border-gray-200">
-        <h1 className="text-sm font-semibold text-gray-700 tracking-wide">
-          <img src="/favicon/favicon.svg" alt="notesbase logo" className="w-6 h-6"/>
-        </h1>
-        <div className="flex items-center gap-1">
+    <aside className="w-64 h-screen flex flex-col shrink-0 nb-sidebar">
+      <div className="px-3 py-2.5 flex items-center justify-between nb-sidebar-header">
+        <img src="/favicon/favicon.svg" alt="notesbase logo" className="w-6 h-6"/>
+        <span className="nb-brand select-none">notesbase</span>
+        <div className="flex items-center gap-0.5">
           <button
             onClick={() => setExportOpen(true)}
-            className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded"
+            className="nb-icon-btn"
             title="Export all pages"
           >
             <DownloadSimpleIcon size={14} weight="light"/>
           </button>
           <button
             onClick={(e) => handleCreatePage(e)}
-            className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded"
+            className="nb-icon-btn"
             title="New page"
+            style={{fontSize: '1.1rem', fontWeight: 300, letterSpacing: '-0.5px'}}
           >
             +
           </button>
@@ -66,17 +66,14 @@ export function Sidebar() {
       </div>
       {exportOpen && <ExportDialog mode="all" onClose={() => setExportOpen(false)}/>}
       <SearchBar/>
-      <nav className="flex-1 overflow-y-auto py-2 px-2 flex flex-col">
+      <nav className="flex-1 overflow-y-auto py-1 px-1.5 flex flex-col">
         <div className="flex-1">
           {isTreeLoading ? (
-            <div className="px-3 py-2 text-sm text-gray-400">Loading...</div>
+            <div className="nb-empty" style={{paddingTop: '1rem'}}>Loading…</div>
           ) : tree.length === 0 ? (
-            <div className="px-3 py-8 text-center">
-              <p className="text-sm text-gray-400 mb-3">No pages yet</p>
-              <button
-                onClick={handleCreatePage}
-                className="text-sm text-blue-500 hover:text-blue-600"
-              >
+            <div className="nb-empty">
+              <p>No pages yet</p>
+              <button className="nb-empty-action" onClick={handleCreatePage}>
                 Create your first page
               </button>
             </div>

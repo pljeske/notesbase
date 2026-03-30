@@ -67,87 +67,80 @@ export function PageTreeItem({node, depth, parentId}: PageTreeItemProps) {
       style={{transform: CSS.Transform.toString(transform), transition}}
     >
       <div
-        className={`flex items-center gap-1 py-1 rounded cursor-pointer group text-sm ${
-          isDragging
-            ? 'opacity-40'
-            : isActive
-              ? 'bg-gray-200 text-gray-900'
-              : 'text-gray-600 hover:bg-gray-100'
-        }`}
-        style={{paddingLeft: `${depth * 16 + 8}px`, paddingRight: '8px'}}
+        className={`nb-tree-item${isActive ? ' nb-active' : ''}${isDragging ? ' nb-dragging' : ''}`}
+        style={{paddingLeft: `${depth * 14 + 6}px`}}
         onClick={() => navigate(`/page/${node.id}`)}
       >
+        {/* drag handle */}
         <span
-          className="w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-gray-300 shrink-0"
+          className="nb-drag-handle w-4 h-4 flex items-center justify-center cursor-grab active:cursor-grabbing"
           {...attributes}
           {...listeners}
           onClick={(e) => e.stopPropagation()}
         >
-          <svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor">
-            <circle cx="3" cy="3" r="1.5"/>
-            <circle cx="7" cy="3" r="1.5"/>
-            <circle cx="3" cy="7" r="1.5"/>
-            <circle cx="7" cy="7" r="1.5"/>
-            <circle cx="3" cy="11" r="1.5"/>
-            <circle cx="7" cy="11" r="1.5"/>
+          <svg width="8" height="12" viewBox="0 0 8 12" fill="currentColor">
+            <circle cx="2" cy="2" r="1.25"/>
+            <circle cx="6" cy="2" r="1.25"/>
+            <circle cx="2" cy="6" r="1.25"/>
+            <circle cx="6" cy="6" r="1.25"/>
+            <circle cx="2" cy="10" r="1.25"/>
+            <circle cx="6" cy="10" r="1.25"/>
           </svg>
         </span>
+
+        {/* expand toggle */}
         {node.children.length > 0 ? (
           <button
-            className="w-5 h-5 flex items-center justify-center text-gray-400 hover:text-gray-600 shrink-0"
+            className="nb-expand-btn"
             onClick={(e) => {
               e.stopPropagation();
               setIsExpanded(!isExpanded);
             }}
           >
-            {isExpanded ? '\u25BE' : '\u25B8'}
+            {isExpanded ? '▾' : '▸'}
           </button>
         ) : (
-          <span className="w-5 h-5 shrink-0"/>
+          <span style={{width: '1.125rem', flexShrink: 0}}/>
         )}
+
+        {/* icon + title */}
         <span className="flex items-center gap-1.5 truncate flex-1 min-w-0">
-          <span className="shrink-0 text-gray-500">
-            <PageIcon icon={node.icon} color={node.icon_color} size={14} weight="light"/>
+          <span className="shrink-0" style={{color: 'var(--sidebar-text)'}}>
+            <PageIcon icon={node.icon} color={node.icon_color} size={13} weight="light"/>
           </span>
           <span className="truncate">{node.title || 'Untitled'}</span>
         </span>
+
+        {/* context menu */}
         <div
-          className="relative opacity-0 group-hover:opacity-100 shrink-0"
+          className="nb-tree-menu-wrap"
           ref={menuRef}
           onClick={(e) => e.stopPropagation()}
         >
           <button
-            className="w-5 h-5 flex items-center justify-center text-gray-400 hover:text-gray-600 rounded hover:bg-gray-200"
+            className="nb-tree-menu-btn"
             onClick={() => setMenuOpen((o) => !o)}
             title="More actions"
           >
             ···
           </button>
           {menuOpen && (
-            <div className="absolute right-0 top-6 z-50 bg-white border border-gray-200 rounded shadow-lg py-1 w-40">
-              <button
-                className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
-                onClick={handleCreateSubpage}
-              >
+            <div className="absolute right-0 top-6 z-50 nb-dropdown w-40">
+              <button className="nb-dropdown-item" onClick={handleCreateSubpage}>
                 Add subpage
               </button>
-              <button
-                className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
-                onClick={handleDuplicate}
-              >
+              <button className="nb-dropdown-item" onClick={handleDuplicate}>
                 Duplicate
               </button>
-              <hr className="my-1 border-gray-100"/>
-              <button
-                className="w-full text-left px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
-                onClick={handleMoveToTrash}
-              >
+              <div className="nb-dropdown-divider"/>
+              <button className="nb-dropdown-item nb-danger" onClick={handleMoveToTrash}>
                 Move to Trash
               </button>
             </div>
           )}
         </div>
       </div>
+
       {isExpanded && node.children.length > 0 && (
         <SortableContext
           items={node.children.map((c) => c.id)}
