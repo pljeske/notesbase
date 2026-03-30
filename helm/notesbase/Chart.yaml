@@ -3,7 +3,7 @@ name: notesbase
 description: Self-hosted notes application with rich text editing and file uploads
 type: application
 version: 0.2.0
-appVersion: "v0.18.0"
+appVersion: "v0.19.0"
 dependencies:
   - name: postgres
     version: "1.6.1"
