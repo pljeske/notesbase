@@ -499,6 +499,109 @@
   color: #065f46;
 }
 
+/* Table toolbar (bubble menu) */
+.table-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 6px;
+  background: #1f2937;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.table-toolbar-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 5px;
+  border: none;
+  background: transparent;
+  color: #d1d5db;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: background 0.1s, color 0.1s;
+}
+
+.table-toolbar-btn:hover {
+  background: #374151;
+  color: #f9fafb;
+}
+
+.table-toolbar-btn-danger {
+  color: #fca5a5;
+}
+
+.table-toolbar-btn-danger:hover {
+  background: #7f1d1d;
+  color: #fecaca;
+}
+
+.table-toolbar-btn-toggle {
+  color: #93c5fd;
+}
+
+.table-toolbar-btn-toggle:hover {
+  background: #1e3a5f;
+  color: #bfdbfe;
+}
+
+/* Tables */
+.tiptap table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1em 0;
+  font-size: 0.9375rem;
+  overflow: hidden;
+}
+
+.tiptap table td,
+.tiptap table th {
+  border: 1px solid #e5e7eb;
+  padding: 0.5rem 0.75rem;
+  vertical-align: top;
+  min-width: 80px;
+  position: relative;
+}
+
+.tiptap table th {
+  background-color: #f3f4f6;
+  font-weight: 600;
+  color: #374151;
+  text-align: left;
+}
+
+.tiptap table tr:nth-child(even) td {
+  background-color: #fafafa;
+}
+
+.tiptap table .selectedCell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(59, 130, 246, 0.12);
+  pointer-events: none;
+}
+
+.tiptap table .column-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -2px;
+  bottom: -2px;
+  width: 4px;
+  background-color: #3b82f6;
+  pointer-events: none;
+}
+
+.tiptap .tableWrapper {
+  overflow-x: auto;
+  margin: 1em 0;
+}
+
 /* Page mention inline node */
 .page-mention {
   display: inline;

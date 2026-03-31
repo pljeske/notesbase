@@ -4,6 +4,10 @@ import Placeholder from '@tiptap/extension-placeholder';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
+import {Table} from '@tiptap/extension-table';
+import {TableRow} from '@tiptap/extension-table-row';
+import {TableCell} from '@tiptap/extension-table-cell';
+import {TableHeader} from '@tiptap/extension-table-header';
 import {common, createLowlight} from 'lowlight';
 import {AuthImage} from './AuthImage';
 import {useEffect, useRef, useState} from 'react';
@@ -16,6 +20,7 @@ import {CalloutBlock} from './CalloutBlock';
 import {CodeBlockView} from './CodeBlockView';
 import {IconPicker} from './IconPicker';
 import {FormattingToolbar} from './FormattingToolbar';
+import {TableToolbar} from './TableToolbar';
 import {PageIcon} from '../../utils/icons';
 import type {JSONContent} from '../../types/page';
 import {uploadFile} from '../../api/upload';
@@ -73,6 +78,10 @@ export function Editor({content, onUpdate, pageTitle, onTitleChange, pageId, pag
       PdfBlock,
       FileBlock,
       CalloutBlock,
+      Table.configure({resizable: false}),
+      TableRow,
+      TableCell,
+      TableHeader,
       SlashCommand,
       PageMention,
     ],
@@ -218,6 +227,7 @@ export function Editor({content, onUpdate, pageTitle, onTitleChange, pageId, pag
         placeholder="Untitled"
       />
       {editor && <FormattingToolbar editor={editor}/>}
+      {editor && <TableToolbar editor={editor}/>}
       <EditorContent editor={editor} className="prose prose-lg max-w-none"/>
     </div>
   );

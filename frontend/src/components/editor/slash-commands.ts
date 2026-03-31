@@ -203,6 +203,20 @@ export const slashCommands: SlashCommandItem[] = [
     },
   },
   {
+    title: 'Table',
+    description: 'Insert a table',
+    icon: '⊞',
+    searchTerms: ['table', 'grid', 'spreadsheet', 'rows', 'columns'],
+    command: ({editor, range}) => {
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .insertTable({rows: 3, cols: 3, withHeaderRow: true})
+        .run();
+    },
+  },
+  {
     title: 'File',
     description: 'Upload any file as a download',
     icon: '\uD83D\uDCCE',
