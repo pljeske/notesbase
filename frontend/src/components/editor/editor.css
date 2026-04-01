@@ -293,22 +293,66 @@
 }
 
 .tiptap .pdf-block {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
   border: 1px solid #e5e7eb;
   border-radius: 0.5rem;
   background-color: #f9fafb;
   margin: 0.8em 0;
-  cursor: pointer;
-  transition: background-color 0.15s;
-  text-decoration: none;
-  color: inherit;
+  overflow: hidden;
 }
 
-.tiptap .pdf-block:hover {
+.tiptap .pdf-block-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.tiptap .pdf-block-header:hover {
   background-color: #f3f4f6;
+}
+
+.tiptap .pdf-actions {
+  display: flex;
+  gap: 0.25rem;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.tiptap .pdf-action-btn {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.25rem;
+  background: white;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: #6b7280;
+  transition: background-color 0.15s, color 0.15s;
+  line-height: 1;
+}
+
+.tiptap .pdf-action-btn:hover {
+  background-color: #f3f4f6;
+  color: #111827;
+}
+
+.tiptap .pdf-viewer {
+  border-top: 1px solid #e5e7eb;
+}
+
+.tiptap .pdf-iframe {
+  width: 100%;
+  height: 600px;
+  border: none;
+  display: block;
+}
+
+.tiptap .pdf-loading {
+  padding: 2rem;
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.875rem;
 }
 
 .tiptap .pdf-block .pdf-icon {
