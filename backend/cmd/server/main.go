@@ -12,6 +12,7 @@ import (
 	"notesbase/backend/internal/database"
 	"notesbase/backend/internal/handler"
 	"notesbase/backend/internal/middleware"
+	"notesbase/backend/internal/model"
 	"notesbase/backend/internal/repository"
 	"notesbase/backend/internal/service"
 	"notesbase/backend/internal/storage"
@@ -91,6 +92,10 @@ func main() {
 	adminHandler := handler.NewAdminHandler(userRepo, settingsRepo)
 	authMiddleware := middleware.Auth(authSvc)
 
+	apiKeyRepo := repository.NewPostgresAPIKeyRepository(pool)
+	apiKeyHandler := handler.NewAPIKeyHandler(apiKeyRepo)
+	apiKeyMiddleware := middleware.APIKeyAuth(apiKeyRepo)
+
 	// Router
 	router := gin.Default()
 	router.Use(middleware.CORS(cfg.AllowedOrigins))
@@ -145,6 +150,33 @@ func main() {
 			admin.GET("/settings", adminHandler.GetSettings)
 			admin.PUT("/settings", adminHandler.UpdateSettings)
 		}
+
+		// API key management (JWT-authenticated, for the settings UI)
+		api.GET("/api-keys", apiKeyHandler.ListKeys)
+		api.POST("/api-keys", apiKeyHandler.CreateKey)
+		api.DELETE("/api-keys/:id", apiKeyHandler.DeleteKey)
+	}
+
+	// Plugin API routes — authenticated by API key, not JWT
+	plugin := router.Group("/api/v1/plugin")
+	plugin.Use(apiKeyMiddleware)
+	{
+		plugin.GET("/pages", middleware.RequireScope(model.ScopePageRead), pageHandler.ListPages)
+		plugin.GET("/pages/search", middleware.RequireScope(model.ScopePageRead), pageHandler.SearchPages)
+		plugin.GET("/pages/:id", middleware.RequireScope(model.ScopePageRead), pageHandler.GetPage)
+		plugin.GET("/pages/:id/backlinks", middleware.RequireScope(model.ScopePageRead), pageHandler.GetBacklinks)
+		plugin.POST("/pages", middleware.RequireScope(model.ScopePageWrite), pageHandler.CreatePage)
+		plugin.PUT("/pages/:id", middleware.RequireScope(model.ScopePageWrite), pageHandler.UpdatePage)
+		plugin.PATCH("/pages/:id/move", middleware.RequireScope(model.ScopePageWrite), pageHandler.MovePage)
+
+		plugin.GET("/tags", middleware.RequireScope(model.ScopeTagRead), tagHandler.ListTags)
+		plugin.GET("/tags/:id/pages", middleware.RequireScope(model.ScopeTagRead), tagHandler.ListPagesByTag)
+		plugin.POST("/tags", middleware.RequireScope(model.ScopeTagWrite), tagHandler.CreateTag)
+		plugin.PUT("/tags/:id", middleware.RequireScope(model.ScopeTagWrite), tagHandler.UpdateTag)
+		plugin.DELETE("/tags/:id", middleware.RequireScope(model.ScopeTagWrite), tagHandler.DeleteTag)
+
+		plugin.GET("/files/:id", middleware.RequireScope(model.ScopeFileRead), fileHandler.GetFile)
+		plugin.POST("/upload", middleware.RequireScope(model.ScopeFileWrite), fileHandler.Upload)
 	}
 
 	// Start server

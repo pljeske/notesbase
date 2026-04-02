@@ -53,6 +53,9 @@ export function AppLayout() {
             {user && (
               <span className="nb-header-user">{user.name}</span>
             )}
+            <Link to="/settings" className="nb-header-action">
+              Settings
+            </Link>
             {user?.role === 'admin' && (
               <Link to="/admin" className="nb-header-action">
                 Admin

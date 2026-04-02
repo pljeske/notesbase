@@ -9,6 +9,7 @@ import {RegisterPage} from './components/auth/RegisterPage';
 import {ForgotPasswordPage} from './components/auth/ForgotPasswordPage';
 import {ResetPasswordPage} from './components/auth/ResetPasswordPage';
 import {AdminPanel} from './components/admin/AdminPanel';
+import {ApiKeysPage} from './components/settings/ApiKeysPage';
 import {useAuthStore} from './stores/authStore';
 
 function AuthGuard({children}: {children: React.ReactNode}) {
@@ -55,6 +56,7 @@ function App() {
           <Route path="/" element={<WelcomePage/>}/>
           <Route path="/page/:pageId" element={<PageView/>}/>
           <Route path="/tag/:tagId" element={<TagView/>}/>
+          <Route path="/settings" element={<ApiKeysPage/>}/>
           <Route
             path="/admin"
             element={<AdminGuard><AdminPanel/></AdminGuard>}

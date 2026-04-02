@@ -50,6 +50,7 @@ notesbase is the middle ground: simple to run, actually multi-user, with client-
 * Client-side AES-GCM encrypted pages (keyed to your account password, server never sees plaintext)
 * Multi-user with admin role; optional registration disable
 * File storage via S3/MinIO
+* Plugin API with scoped API keys (`pages:read`, `pages:write`, `tags:*`, `files:*`)
 
 == Quick Start
 
@@ -71,6 +72,25 @@ First account becomes admin.
 * PostgreSQL
 * MinIO (S3-compatible)
 * Docker Compose / Helm
+
+== Plugin API
+
+Create an API key in Settings, then authenticate with `Authorization: Bearer nbp_<key>`.
+
+[source,bash]
+----
+# List pages
+curl -H "Authorization: Bearer nbp_..." http://localhost:8080/api/v1/plugin/pages
+
+# Create a page
+curl -X POST -H "Authorization: Bearer nbp_..." \
+     -H "Content-Type: application/json" \
+     -d '{"title":"My page","content":{}}' \
+     http://localhost:8080/api/v1/plugin/pages
+----
+
+Available scopes: `pages:read`, `pages:write`, `tags:read`, `tags:write`, `files:read`, `files:write`.
+Encrypted pages are read-only via the API (the server never holds the key).
 
 == Roadmap
 
