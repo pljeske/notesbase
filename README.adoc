@@ -5,6 +5,43 @@ Vibe coded self-hosted notes app.
 image::docs/screenshots/page-view.jpeg[notesbase overview]
 image::docs/screenshots/page-view-slashmenu.jpeg[Rich text editor with multiple formats]
 
+== Why I built this
+
+I wanted a shared notes app I could self-host without paying per seat or trusting someone else's cloud with my data.
+Notion is great but everything lives on their servers.
+Obsidian is local-first but multi-user sync is a pain.
+notesbase is the middle ground: simple to run, actually multi-user, with client-side encryption built into the login flow.
+
+[cols="4*",options="header"]
+|===
+| | notesbase | Notion | Obsidian
+
+| Self-hosted
+| ✓
+| ✗
+| ✓ (local only)
+
+| Multi-user
+| ✓
+| ✓ (paid/seat)
+| ✗
+
+| Client-side encryption
+| ✓
+| ✗
+| ✗
+
+| Setup complexity
+| `docker compose up`
+| SaaS
+| Complex sync
+
+| Open source
+| ✓
+| ✗
+| ✗
+|===
+
 == Features
 
 * Hierarchical pages with custom icons
