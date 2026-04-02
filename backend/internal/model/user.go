@@ -7,14 +7,15 @@ import (
 )
 
 type User struct {
-	ID           uuid.UUID  `json:"-"`
-	Email        string     `json:"-"`
-	PasswordHash string     `json:"-"`
-	Name         string     `json:"-"`
-	Role         string     `json:"-"`
-	DisabledAt   *time.Time `json:"-"`
-	CreatedAt    time.Time  `json:"-"`
-	UpdatedAt    time.Time  `json:"-"`
+	ID             uuid.UUID  `json:"-"`
+	Email          string     `json:"-"`
+	PasswordHash   string     `json:"-"`
+	Name           string     `json:"-"`
+	Role           string     `json:"-"`
+	EncryptionSalt string     `json:"-"`
+	DisabledAt     *time.Time `json:"-"`
+	CreatedAt      time.Time  `json:"-"`
+	UpdatedAt      time.Time  `json:"-"`
 }
 
 type RegisterRequest struct {
@@ -35,10 +36,11 @@ type AuthResponse struct {
 }
 
 type UserInfo struct {
-	ID    uuid.UUID `json:"id"`
-	Email string    `json:"email"`
-	Name  string    `json:"name"`
-	Role  string    `json:"role"`
+	ID             uuid.UUID `json:"id"`
+	Email          string    `json:"email"`
+	Name           string    `json:"name"`
+	Role           string    `json:"role"`
+	EncryptionSalt string    `json:"encryption_salt"`
 }
 
 // AdminUserInfo is returned by admin endpoints — no content access.

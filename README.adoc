@@ -40,9 +40,6 @@ Open http://localhost:3000, register the first account (automatically becomes ad
 
 == Roadmap
 
-=== Editor
-- Rendering PDFs directly on the page
-
 === Navigation & Organization
 - Breadcrumbs on page header
 - Favorites / pinned pages
@@ -52,7 +49,6 @@ Open http://localhost:3000, register the first account (automatically becomes ad
 
 === Users & Security
 - Backup and restore from backup
-- Improve encrypted page workflow
 
 === Customization
 - Dark mode

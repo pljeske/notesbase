@@ -22,10 +22,10 @@ func NewPostgresUserRepository(pool *pgxpool.Pool) *PostgresUserRepository {
 
 func (r *PostgresUserRepository) Create(ctx context.Context, user *model.User) error {
 	err := r.pool.QueryRow(ctx,
-		`INSERT INTO users (email, password_hash, name, role)
-		 VALUES ($1, $2, $3, $4)
+		`INSERT INTO users (email, password_hash, name, role, encryption_salt)
+		 VALUES ($1, $2, $3, $4, $5)
 		 RETURNING id, created_at, updated_at`,
-		user.Email, user.PasswordHash, user.Name, user.Role).
+		user.Email, user.PasswordHash, user.Name, user.Role, user.EncryptionSalt).
 		Scan(&user.ID, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		return fmt.Errorf("insert user: %w", err)
@@ -37,9 +37,9 @@ func (r *PostgresUserRepository) GetByEmail(ctx context.Context, email string) (
 	var u model.User
 	var disabledAt *time.Time
 	err := r.pool.QueryRow(ctx,
-		`SELECT id, email, password_hash, name, role, disabled_at, created_at, updated_at
+		`SELECT id, email, password_hash, name, role, encryption_salt, disabled_at, created_at, updated_at
 		 FROM users WHERE email = $1`, email).
-		Scan(&u.ID, &u.Email, &u.PasswordHash, &u.Name, &u.Role, &disabledAt, &u.CreatedAt, &u.UpdatedAt)
+		Scan(&u.ID, &u.Email, &u.PasswordHash, &u.Name, &u.Role, &u.EncryptionSalt, &disabledAt, &u.CreatedAt, &u.UpdatedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, nil
@@ -54,9 +54,9 @@ func (r *PostgresUserRepository) GetByID(ctx context.Context, id uuid.UUID) (*mo
 	var u model.User
 	var disabledAt *time.Time
 	err := r.pool.QueryRow(ctx,
-		`SELECT id, email, password_hash, name, role, disabled_at, created_at, updated_at
+		`SELECT id, email, password_hash, name, role, encryption_salt, disabled_at, created_at, updated_at
 		 FROM users WHERE id = $1`, id).
-		Scan(&u.ID, &u.Email, &u.PasswordHash, &u.Name, &u.Role, &disabledAt, &u.CreatedAt, &u.UpdatedAt)
+		Scan(&u.ID, &u.Email, &u.PasswordHash, &u.Name, &u.Role, &u.EncryptionSalt, &disabledAt, &u.CreatedAt, &u.UpdatedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, nil

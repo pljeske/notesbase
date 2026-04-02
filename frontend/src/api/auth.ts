@@ -19,6 +19,7 @@ export interface AuthResponse {
     email: string;
     name: string;
     role: string;
+    encryption_salt: string;
   };
 }
 

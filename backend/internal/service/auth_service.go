@@ -69,11 +69,17 @@ func (s *AuthService) Register(ctx context.Context, req model.RegisterRequest) (
 		role = "admin"
 	}
 
+	saltBytes := make([]byte, 16)
+	if _, err := rand.Read(saltBytes); err != nil {
+		return nil, fmt.Errorf("generate encryption salt: %w", err)
+	}
+
 	user := &model.User{
-		Email:        req.Email,
-		PasswordHash: string(hash),
-		Name:         req.Name,
-		Role:         role,
+		Email:          req.Email,
+		PasswordHash:   string(hash),
+		Name:           req.Name,
+		Role:           role,
+		EncryptionSalt: hex.EncodeToString(saltBytes),
 	}
 
 	if err := s.repo.Create(ctx, user); err != nil {
@@ -89,10 +95,11 @@ func (s *AuthService) Register(ctx context.Context, req model.RegisterRequest) (
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		User: model.UserInfo{
-			ID:    user.ID,
-			Email: user.Email,
-			Name:  user.Name,
-			Role:  user.Role,
+			ID:             user.ID,
+			Email:          user.Email,
+			Name:           user.Name,
+			Role:           user.Role,
+			EncryptionSalt: user.EncryptionSalt,
 		},
 	}, nil
 }
@@ -123,10 +130,11 @@ func (s *AuthService) Login(ctx context.Context, req model.LoginRequest) (*model
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		User: model.UserInfo{
-			ID:    user.ID,
-			Email: user.Email,
-			Name:  user.Name,
-			Role:  user.Role,
+			ID:             user.ID,
+			Email:          user.Email,
+			Name:           user.Name,
+			Role:           user.Role,
+			EncryptionSalt: user.EncryptionSalt,
 		},
 	}, nil
 }
@@ -160,10 +168,11 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*m
 		AccessToken:  accessToken,
 		RefreshToken: newRefreshToken,
 		User: model.UserInfo{
-			ID:    user.ID,
-			Email: user.Email,
-			Name:  user.Name,
-			Role:  user.Role,
+			ID:             user.ID,
+			Email:          user.Email,
+			Name:           user.Name,
+			Role:           user.Role,
+			EncryptionSalt: user.EncryptionSalt,
 		},
 	}, nil
 }

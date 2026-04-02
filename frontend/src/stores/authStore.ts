@@ -2,12 +2,14 @@ import {create} from 'zustand';
 import type {LoginData, RegisterData} from '../api/auth';
 import {authApi} from '../api/auth';
 import {clearBlobCache} from '../api/fetchFile';
+import {deriveUserKey} from '../utils/crypto';
 
 interface UserInfo {
   id: string;
   email: string;
   name: string;
   role: string;
+  encryption_salt: string;
 }
 
 interface AuthState {
@@ -17,6 +19,8 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  /** Derived AES-GCM key for encrypted pages. In-memory only — never persisted. */
+  encryptionKey: CryptoKey | null;
 
   login: (data: LoginData) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
@@ -24,6 +28,10 @@ interface AuthState {
   loadFromStorage: () => void;
   setError: (error: string | null) => void;
   tryRefreshToken: () => Promise<boolean>;
+  /** Derive and store the encryption key from the user's account password. */
+  unlockEncryption: (password: string) => Promise<void>;
+  /** Clear the in-memory encryption key, re-locking all encrypted pages. */
+  lockEncryption: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -33,6 +41,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: false,
   isLoading: false,
   error: null,
+  encryptionKey: null,
 
   login: async (data: LoginData) => {
     set({isLoading: true, error: null});
@@ -41,12 +50,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       localStorage.setItem('access_token', resp.access_token);
       localStorage.setItem('refresh_token', resp.refresh_token);
       localStorage.setItem('user', JSON.stringify(resp.user));
+      const encryptionKey = await deriveUserKey(data.password, resp.user.encryption_salt);
       set({
         token: resp.access_token,
         refreshToken: resp.refresh_token,
         user: resp.user,
         isAuthenticated: true,
         isLoading: false,
+        encryptionKey,
       });
     } catch (err) {
       set({
@@ -64,12 +75,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       localStorage.setItem('access_token', resp.access_token);
       localStorage.setItem('refresh_token', resp.refresh_token);
       localStorage.setItem('user', JSON.stringify(resp.user));
+      const encryptionKey = await deriveUserKey(data.password, resp.user.encryption_salt);
       set({
         token: resp.access_token,
         refreshToken: resp.refresh_token,
         user: resp.user,
         isAuthenticated: true,
         isLoading: false,
+        encryptionKey,
       });
     } catch (err) {
       set({
@@ -91,6 +104,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       user: null,
       isAuthenticated: false,
       error: null,
+      encryptionKey: null,
     });
   },
 
@@ -101,9 +115,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (token && refreshToken && userStr) {
       try {
         const user = JSON.parse(userStr) as UserInfo;
+        // encryptionKey is not persisted — user must re-enter password to unlock encrypted pages
         set({token, refreshToken, user, isAuthenticated: true});
       } catch {
-        // Invalid data, clear
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
         localStorage.removeItem('user');
@@ -113,6 +127,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   setError: (error) => set({error}),
 
+  unlockEncryption: async (password: string) => {
+    const {user} = get();
+    if (!user) return;
+    const encryptionKey = await deriveUserKey(password, user.encryption_salt);
+    set({encryptionKey});
+  },
+
+  lockEncryption: () => set({encryptionKey: null}),
+
   tryRefreshToken: async () => {
     const {refreshToken} = get();
     if (!refreshToken) return false;
@@ -121,6 +144,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       localStorage.setItem('access_token', resp.access_token);
       localStorage.setItem('refresh_token', resp.refresh_token);
       localStorage.setItem('user', JSON.stringify(resp.user));
+      // Key is not re-derived on token refresh — user must explicitly unlock if needed
       set({
         token: resp.access_token,
         refreshToken: resp.refresh_token,

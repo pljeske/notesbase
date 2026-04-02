@@ -1,6 +1,7 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {Link, useParams} from 'react-router-dom';
 import {usePageStore} from '../stores/pageStore';
+import {useAuthStore} from '../stores/authStore';
 import {useAutoSave} from '../hooks/useAutoSave';
 import {Editor} from './editor/Editor';
 import {TagPicker} from './editor/TagPicker';
@@ -9,11 +10,12 @@ import {DownloadSimpleIcon, LockSimpleIcon, LockSimpleOpenIcon} from '@phosphor-
 import type {JSONContent, SearchResult} from '../types/page';
 import {pagesApi} from '../api/pages';
 import type {EncryptedPayload} from '../utils/crypto';
-import {decryptContent, encryptContent, encryptWithKey, isEncryptedPayload,} from '../utils/crypto';
+import {decryptLegacy, decryptWithKey, encryptWithKey, isEncryptedPayload, isLegacyPayload} from '../utils/crypto';
 
 export function PageView() {
   const {pageId} = useParams<{ pageId: string }>();
   const {activePage, isPageLoading, fetchPageError, fetchPage, updatePage} = usePageStore();
+  const {encryptionKey, unlockEncryption} = useAuthStore();
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState<JSONContent | null>(null);
@@ -25,21 +27,21 @@ export function PageView() {
 
   // ── Encryption state ───────────────────────────────────────────
   const [lockState, setLockState] = useState<'locked' | 'unlocked'>('unlocked');
-  // Raw encrypted payload from the server (needed for salt reuse on re-encrypt)
+  // Raw encrypted payload from server (needed for legacy salt on fallback saves)
   const rawPayloadRef = useRef<EncryptedPayload | null>(null);
-  // Derived CryptoKey held in memory only — never serialized
-  const derivedKeyRef = useRef<CryptoKey | null>(null);
+  // Key for legacy pages unlocked with their old per-page password
+  const legacyKeyRef = useRef<CryptoKey | null>(null);
 
-  // Lock-screen inputs
+  // Lock-screen password input (account password or legacy page password)
   const [lockPassword, setLockPassword] = useState('');
   const [lockError, setLockError] = useState<string | null>(null);
   const [lockWorking, setLockWorking] = useState(false);
 
-  // "Encrypt this page" modal
-  const [showEncryptModal, setShowEncryptModal] = useState(false);
-  const [encryptPassword, setEncryptPassword] = useState('');
-  const [encryptError, setEncryptError] = useState<string | null>(null);
-  const [encryptWorking, setEncryptWorking] = useState(false);
+  // Unlock-to-encrypt modal (shown when user clicks encrypt but session key is missing)
+  const [showEncryptUnlock, setShowEncryptUnlock] = useState(false);
+  const [encryptUnlockPassword, setEncryptUnlockPassword] = useState('');
+  const [encryptUnlockError, setEncryptUnlockError] = useState<string | null>(null);
+  const [encryptUnlockWorking, setEncryptUnlockWorking] = useState(false);
 
   // Two-click confirm for removing encryption
   const [decryptConfirm, setDecryptConfirm] = useState(false);
@@ -47,7 +49,6 @@ export function PageView() {
 
   const initialized = initializedPageId === pageId;
   const isEncrypted = activePage?.is_encrypted ?? false;
-
   useEffect(() => {
     if (pageId) fetchPage(pageId);
   }, [pageId, fetchPage]);
@@ -57,53 +58,103 @@ export function PageView() {
     pagesApi.getBacklinks(pageId).then(setBacklinks).catch(() => setBacklinks([]));
   }, [pageId]);
 
+  // ── Initialize page data ───────────────────────────────────────
   useEffect(() => {
-    if (activePage && activePage.id === pageId && initializedPageId !== pageId) {
-      setTimeout(() => {
-        setTitle(activePage.title);
-        setIcon(activePage.icon);
-        setIconColor(activePage.icon_color);
+    if (!activePage || activePage.id !== pageId || initializedPageId === pageId) return;
 
-        if (activePage.is_encrypted && isEncryptedPayload(activePage.content)) {
-          // Encrypted page: keep content null, show lock screen
-          rawPayloadRef.current = activePage.content as unknown as EncryptedPayload;
-          derivedKeyRef.current = null;
+    const payload =
+      activePage.is_encrypted && isEncryptedPayload(activePage.content)
+        ? (activePage.content as unknown as EncryptedPayload)
+        : null;
+
+    rawPayloadRef.current = payload;
+    legacyKeyRef.current = null;
+
+    if (payload && !isLegacyPayload(payload) && encryptionKey) {
+      // New format + key available: auto-decrypt
+      decryptWithKey(payload, encryptionKey)
+        .then(data => {
+          setTitle(activePage.title);
+          setIcon(activePage.icon);
+          setIconColor(activePage.icon_color);
+          setContent(data as JSONContent);
+          setLockState('unlocked');
+          setLockPassword('');
+          setLockError(null);
+          setInitializedPageId(pageId!);
+        })
+        .catch(() => {
+          setTitle(activePage.title);
+          setIcon(activePage.icon);
+          setIconColor(activePage.icon_color);
           setContent(null);
           setLockState('locked');
           setLockPassword('');
           setLockError(null);
-        } else {
-          // Unencrypted page: initialize editor normally
-          rawPayloadRef.current = null;
-          derivedKeyRef.current = null;
-          setContent(activePage.content);
-          setLockState('unlocked');
-        }
-        setInitializedPageId(pageId);
+          setInitializedPageId(pageId!);
+        });
+    } else {
+      setTimeout(() => {
+        setTitle(activePage.title);
+        setIcon(activePage.icon);
+        setIconColor(activePage.icon_color);
+        setContent(payload ? null : activePage.content);
+        setLockState(payload ? 'locked' : 'unlocked');
+        setLockPassword('');
+        setLockError(null);
+        setInitializedPageId(pageId!);
       }, 0);
     }
-  }, [activePage, pageId, initializedPageId]);
+  }, [activePage, pageId, initializedPageId, encryptionKey]);
+
+  // Re-lock the current page when the session key is cleared
+  useEffect(() => {
+    if (encryptionKey || !isEncrypted || !initialized || lockState !== 'unlocked') return;
+    if (legacyKeyRef.current) return; // Legacy pages are keyed independently
+    legacyKeyRef.current = null;
+    setContent(null);
+    setLockState('locked');
+    setLockPassword('');
+    setLockError(null);
+  }, [encryptionKey, isEncrypted, initialized, lockState]);
+
+  // Auto-decrypt new-format pages when the session key becomes available
+  useEffect(() => {
+    if (!encryptionKey || lockState !== 'locked' || !rawPayloadRef.current) return;
+    if (isLegacyPayload(rawPayloadRef.current)) return; // Legacy pages need per-page password
+    decryptWithKey(rawPayloadRef.current, encryptionKey)
+      .then(data => {
+        setContent(data as JSONContent);
+        setLockState('unlocked');
+        setLockPassword('');
+        setLockError(null);
+      })
+      .catch(() => {/* ignore — wrong key, stay locked */
+      });
+  }, [encryptionKey, lockState]);
 
   // ── Save ───────────────────────────────────────────────────────
   const save = useCallback(async () => {
-    if (!pageId) return;
-    let contentToSave: JSONContent | undefined = content ?? undefined;
+    if (!pageId || !content) return;
+    let contentToSave: JSONContent | undefined = content;
 
-    if (isEncrypted && derivedKeyRef.current && rawPayloadRef.current && content) {
+    if (isEncrypted) {
+      // Prefer the user key (new format, migrates legacy pages automatically).
+      // Fall back to the legacy key + salt if the user key isn't available yet.
+      const key = encryptionKey ?? legacyKeyRef.current;
+      if (!key) return;
+      const legacySalt =
+        !encryptionKey && rawPayloadRef.current?.salt ? rawPayloadRef.current.salt : undefined;
       try {
-        const payload = await encryptWithKey(
-          content,
-          derivedKeyRef.current,
-          rawPayloadRef.current.salt,
-        );
+        const payload = await encryptWithKey(content, key, legacySalt);
         contentToSave = payload as unknown as JSONContent;
       } catch {
-        return; // Don't save if encryption fails
+        return;
       }
     }
 
     await updatePage(pageId, {title, content: contentToSave});
-  }, [pageId, title, content, isEncrypted, updatePage]);
+  }, [pageId, title, content, isEncrypted, encryptionKey, updatePage]);
 
   const handleIconChange = useCallback(
     async (newIcon: string | null) => {
@@ -150,15 +201,25 @@ export function PageView() {
     };
   }, [title, initialized]);
 
-  // ── Encryption handlers ────────────────────────────────────────
+  // ── Unlock handlers ────────────────────────────────────────────
   const handleUnlock = async () => {
     if (!lockPassword || !rawPayloadRef.current) return;
     setLockWorking(true);
     setLockError(null);
     try {
-      const {data, key} = await decryptContent(rawPayloadRef.current, lockPassword);
-      derivedKeyRef.current = key;
-      setContent(data as JSONContent);
+      if (isLegacyPayload(rawPayloadRef.current)) {
+        // Old per-page password format
+        const {data, key} = await decryptLegacy(rawPayloadRef.current, lockPassword);
+        legacyKeyRef.current = key;
+        setContent(data as JSONContent);
+      } else {
+        // New format: use password to unlock the session key
+        await unlockEncryption(lockPassword);
+        // The encryptionKey effect above will auto-decrypt once the key is set
+        setLockPassword('');
+        setLockWorking(false);
+        return;
+      }
       setLockState('unlocked');
       setLockPassword('');
     } catch {
@@ -168,25 +229,38 @@ export function PageView() {
     }
   };
 
-  const handleEncryptPage = async () => {
-    if (!encryptPassword || !pageId || !content) return;
-    setEncryptWorking(true);
-    setEncryptError(null);
+  const handleEncryptPage = async (key?: CryptoKey) => {
+    const keyToUse = key ?? encryptionKey;
+    if (!pageId || !content || !keyToUse) return;
     try {
-      const {payload, key} = await encryptContent(content, encryptPassword);
+      const payload = await encryptWithKey(content, keyToUse);
       await updatePage(pageId, {
         title,
         content: payload as unknown as JSONContent,
         is_encrypted: true,
       });
-      derivedKeyRef.current = key;
       rawPayloadRef.current = payload;
-      setShowEncryptModal(false);
-      setEncryptPassword('');
+      legacyKeyRef.current = null;
     } catch {
-      setEncryptError('Encryption failed. Please try again.');
+      // Ignore — encryption failure is silent (rare, key is always available here)
+    }
+  };
+
+  const handleEncryptUnlockSubmit = async () => {
+    if (!encryptUnlockPassword) return;
+    setEncryptUnlockWorking(true);
+    setEncryptUnlockError(null);
+    try {
+      await unlockEncryption(encryptUnlockPassword);
+      // unlockEncryption sets the key in the store; read it back to pass directly
+      const key = useAuthStore.getState().encryptionKey!;
+      setShowEncryptUnlock(false);
+      setEncryptUnlockPassword('');
+      await handleEncryptPage(key);
+    } catch {
+      setEncryptUnlockError('Incorrect password. Please try again.');
     } finally {
-      setEncryptWorking(false);
+      setEncryptUnlockWorking(false);
     }
   };
 
@@ -198,13 +272,9 @@ export function PageView() {
       return;
     }
     if (decryptConfirmTimerRef.current) clearTimeout(decryptConfirmTimerRef.current);
-    await updatePage(pageId, {
-      title,
-      content: content,
-      is_encrypted: false,
-    });
+    await updatePage(pageId, {title, content, is_encrypted: false});
     rawPayloadRef.current = null;
-    derivedKeyRef.current = null;
+    legacyKeyRef.current = null;
     setDecryptConfirm(false);
   };
 
@@ -250,6 +320,7 @@ export function PageView() {
 
   // ── Lock screen ────────────────────────────────────────────────
   if (lockState === 'locked') {
+    const isSessionLock = rawPayloadRef.current && !isLegacyPayload(rawPayloadRef.current);
     return (
       <div className="flex flex-col h-full">
         <div className="flex-1 flex items-center justify-center px-8">
@@ -265,14 +336,16 @@ export function PageView() {
                 {title || 'Encrypted page'}
               </h2>
               <p className="text-sm text-gray-500">
-                Enter your password to view this page.
+                {isSessionLock
+                  ? 'Enter your account password to unlock encrypted pages.'
+                  : 'This page uses a legacy format. Enter its password to unlock and migrate it.'}
               </p>
             </div>
 
             <div className="space-y-3">
               <input
                 type="password"
-                placeholder="Password"
+                placeholder={isSessionLock ? 'Account password' : 'Page password'}
                 value={lockPassword}
                 onChange={(e) => setLockPassword(e.target.value)}
                 onKeyDown={(e) => {
@@ -282,9 +355,7 @@ export function PageView() {
                 className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-gray-400 bg-white"
                 style={{fontFamily: 'inherit'}}
               />
-              {lockError && (
-                <p className="text-xs text-red-500">{lockError}</p>
-              )}
+              {lockError && <p className="text-xs text-red-500">{lockError}</p>}
               <button
                 onClick={handleUnlock}
                 disabled={!lockPassword || lockWorking}
@@ -301,7 +372,9 @@ export function PageView() {
             </div>
 
             <p className="text-xs text-center mt-5" style={{color: '#9ca3af'}}>
-              Encrypted pages are not searchable. If you've forgotten your password, you'll need to delete this page.
+              {isSessionLock
+                ? 'Unlocking here applies to all encrypted pages for this session.'
+                : 'Encrypted pages are not searchable. After unlocking, the page will be migrated to use your account password.'}
             </p>
           </div>
         </div>
@@ -342,11 +415,7 @@ export function PageView() {
             </div>
           ) : (
             <button
-              onClick={() => {
-                setEncryptPassword('');
-                setEncryptError(null);
-                setShowEncryptModal(true);
-              }}
+              onClick={() => encryptionKey ? void handleEncryptPage() : setShowEncryptUnlock(true)}
               className="p-1 rounded transition-colors hover:bg-gray-100"
               style={{color: '#9ca3af'}}
               title="Encrypt this page"
@@ -368,13 +437,17 @@ export function PageView() {
 
       {exportOpen && <ExportDialog mode="page" onClose={() => setExportOpen(false)}/>}
 
-      {/* "Encrypt this page" modal */}
-      {showEncryptModal && (
+      {/* Unlock-to-encrypt modal */}
+      {showEncryptUnlock && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{background: 'rgba(0,0,0,0.35)'}}
           onClick={(e) => {
-            if (e.target === e.currentTarget) setShowEncryptModal(false);
+            if (e.target === e.currentTarget) {
+              setShowEncryptUnlock(false);
+              setEncryptUnlockPassword('');
+              setEncryptUnlockError(null);
+            }
           }}
         >
           <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
@@ -387,58 +460,48 @@ export function PageView() {
               </div>
               <div>
                 <h2 className="text-sm font-semibold text-gray-900">Encrypt this page</h2>
-                <p className="text-xs text-gray-500">Content is encrypted in your browser only.</p>
+                <p className="text-xs text-gray-500">Enter your account password to continue.</p>
               </div>
             </div>
-
-            <div
-              className="text-xs rounded-lg px-3 py-2.5 mb-4"
-              style={{background: '#fffbeb', color: '#92400e'}}
-            >
-              Use a password you won't forget — encrypted pages cannot be recovered without it. Admins cannot read the
-              content.
-            </div>
-
             <input
               type="password"
-              placeholder="Choose a password"
-              value={encryptPassword}
-              onChange={(e) => setEncryptPassword(e.target.value)}
+              placeholder="Account password"
+              value={encryptUnlockPassword}
+              onChange={(e) => setEncryptUnlockPassword(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') void handleEncryptPage();
+                if (e.key === 'Enter') void handleEncryptUnlockSubmit();
               }}
               autoFocus
               className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-gray-400 mb-3"
               style={{fontFamily: 'inherit'}}
             />
-            {encryptError && (
-              <p className="text-xs text-red-500 mb-3">{encryptError}</p>
+            {encryptUnlockError && (
+              <p className="text-xs text-red-500 mb-3">{encryptUnlockError}</p>
             )}
-
-            <p className="text-xs text-gray-400 mb-4">
-              Encrypted pages are not searchable and won't appear in search results.
-            </p>
-
             <div className="flex gap-2 justify-end">
               <button
-                onClick={() => setShowEncryptModal(false)}
+                onClick={() => {
+                  setShowEncryptUnlock(false);
+                  setEncryptUnlockPassword('');
+                  setEncryptUnlockError(null);
+                }}
                 className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                 style={{fontFamily: 'inherit'}}
               >
                 Cancel
               </button>
               <button
-                onClick={handleEncryptPage}
-                disabled={!encryptPassword || encryptWorking}
+                onClick={handleEncryptUnlockSubmit}
+                disabled={!encryptUnlockPassword || encryptUnlockWorking}
                 className="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors"
                 style={{
-                  background: encryptPassword && !encryptWorking ? '#1a1d18' : '#e5e7eb',
-                  color: encryptPassword && !encryptWorking ? '#fff' : '#9ca3af',
-                  cursor: encryptPassword && !encryptWorking ? 'pointer' : 'default',
+                  background: encryptUnlockPassword && !encryptUnlockWorking ? '#1a1d18' : '#e5e7eb',
+                  color: encryptUnlockPassword && !encryptUnlockWorking ? '#fff' : '#9ca3af',
+                  cursor: encryptUnlockPassword && !encryptUnlockWorking ? 'pointer' : 'default',
                   fontFamily: 'inherit',
                 }}
               >
-                {encryptWorking ? 'Encrypting…' : 'Encrypt page'}
+                {encryptUnlockWorking ? 'Encrypting…' : 'Encrypt page'}
               </button>
             </div>
           </div>
