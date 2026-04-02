@@ -92,7 +92,7 @@ func (s *FileService) DeleteFile(ctx context.Context, userID uuid.UUID, id uuid.
 // CleanupOrphanedFiles removes files that are associated with a page but no longer
 // referenced in its content. Called after page content is updated.
 func (s *FileService) CleanupOrphanedFiles(ctx context.Context, userID uuid.UUID, pageID uuid.UUID, content json.RawMessage) error {
-	pageFiles, err := s.repo.GetByPageID(ctx, pageID)
+	pageFiles, err := s.repo.GetByPageID(ctx, userID, pageID)
 	if err != nil {
 		return fmt.Errorf("get page files: %w", err)
 	}
@@ -119,7 +119,7 @@ func (s *FileService) CleanupOrphanedFiles(ctx context.Context, userID uuid.UUID
 // DeleteAllPageFiles removes all files associated with a page from S3 and the database.
 // Called before a page is deleted.
 func (s *FileService) DeleteAllPageFiles(ctx context.Context, userID uuid.UUID, pageID uuid.UUID) error {
-	pageFiles, err := s.repo.GetByPageID(ctx, pageID)
+	pageFiles, err := s.repo.GetByPageID(ctx, userID, pageID)
 	if err != nil {
 		return fmt.Errorf("get page files: %w", err)
 	}
@@ -139,7 +139,7 @@ func (s *FileService) DeleteAllPageFiles(ctx context.Context, userID uuid.UUID, 
 // CopyPageFiles server-side copies all files from sourcePageID to targetPageID.
 // Returns a map of old file ID → new file ID for content URL rewriting.
 func (s *FileService) CopyPageFiles(ctx context.Context, userID uuid.UUID, sourcePageID, targetPageID uuid.UUID) (map[uuid.UUID]uuid.UUID, error) {
-	pageFiles, err := s.repo.GetByPageID(ctx, sourcePageID)
+	pageFiles, err := s.repo.GetByPageID(ctx, userID, sourcePageID)
 	if err != nil {
 		return nil, fmt.Errorf("get source page files: %w", err)
 	}

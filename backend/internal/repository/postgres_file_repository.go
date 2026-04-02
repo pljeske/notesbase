@@ -47,10 +47,10 @@ func (r *PostgresFileRepository) GetByID(ctx context.Context, userID uuid.UUID, 
 	return &f, nil
 }
 
-func (r *PostgresFileRepository) GetByPageID(ctx context.Context, pageID uuid.UUID) ([]model.File, error) {
+func (r *PostgresFileRepository) GetByPageID(ctx context.Context, userID uuid.UUID, pageID uuid.UUID) ([]model.File, error) {
 	rows, err := r.pool.Query(ctx,
 		`SELECT id, user_id, page_id, filename, content_type, size, s3_key, created_at
-		 FROM files WHERE page_id = $1`, pageID,
+		 FROM files WHERE page_id = $1 AND user_id = $2`, pageID, userID,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("query files by page: %w", err)

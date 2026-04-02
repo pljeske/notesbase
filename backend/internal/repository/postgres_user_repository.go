@@ -111,13 +111,39 @@ func (r *PostgresUserRepository) UpdateRole(ctx context.Context, id uuid.UUID, r
 // UpdateRoleChecked atomically updates the role, but prevents demoting the last admin.
 // When role is "user", the UPDATE only executes if there are currently ≥2 admins.
 // Returns false (without error) when blocked by the last-admin check.
+// Uses a serializable transaction with FOR UPDATE to prevent the last-admin race condition.
 func (r *PostgresUserRepository) UpdateRoleChecked(ctx context.Context, id uuid.UUID, role string) (bool, error) {
-	result, err := r.pool.Exec(ctx,
-		`UPDATE users SET role = $1, updated_at = NOW() WHERE id = $2
-		 AND ($1 != 'user' OR (SELECT COUNT(*) FROM users WHERE role = 'admin') > 1)`,
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return false, fmt.Errorf("begin transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	if _, err := tx.Exec(ctx, `SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`); err != nil {
+		return false, fmt.Errorf("set isolation level: %w", err)
+	}
+
+	if role == "user" {
+		var adminCount int
+		if err := tx.QueryRow(ctx,
+			`SELECT COUNT(*) FROM users WHERE role = 'admin' FOR UPDATE`,
+		).Scan(&adminCount); err != nil {
+			return false, fmt.Errorf("count admins: %w", err)
+		}
+		if adminCount <= 1 {
+			return false, nil
+		}
+	}
+
+	result, err := tx.Exec(ctx,
+		`UPDATE users SET role = $1, updated_at = NOW() WHERE id = $2`,
 		role, id)
 	if err != nil {
 		return false, fmt.Errorf("update user role: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return false, fmt.Errorf("commit transaction: %w", err)
 	}
 	return result.RowsAffected() == 1, nil
 }
