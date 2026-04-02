@@ -1,22 +1,18 @@
 = notesbase
 
-A (vibe coded) self-hosted, privacy-focused notes app with a rich editor, hierarchical pages, and client-side encryption.
+Vibe coded self-hosted notes app.
 
-image::docs/screenshots/page.png[notesbase overview]
+image::docs/screenshots/page-view.jpeg[notesbase overview]
+image::docs/screenshots/page-view-slashmenu.jpeg[Rich text editor with multiple formats]
 
 == Features
 
-* *Hierarchical pages* — organize notes in a tree with custom icons and colors
-* *Rich editor* — headings, code blocks with syntax highlighting, tables, callouts, quotes, lists, file uploads, and `[[page mentions]]`
-* *Tags* — label and filter pages
-* *Full-text search* — searches both titles and content
-* *Client-side encrypted pages* — AES-GCM encryption; the server never sees the plaintext
-* *Multi-user* — first registered user becomes admin; registration can be disabled
-* *File storage* — uploads stored in S3/MinIO
-
-image::docs/screenshots/slash-command.png[Rich text editor with multiple formats]
-image::docs/screenshots/login.png[Login]
-image::docs/screenshots/export.png[Export single or all pages]
+* Hierarchical pages with custom icons
+* Rich editor - headings, code blocks, tables, callouts, lists, file uploads, inline PDFs, `+[[page mentions]]+`
+* Tags & full-text search
+* Client-side AES-GCM encrypted pages (keyed to your account password, server never sees plaintext)
+* Multi-user with admin role; optional registration disable
+* File storage via S3/MinIO
 
 == Quick Start
 
@@ -24,34 +20,25 @@ image::docs/screenshots/export.png[Export single or all pages]
 ----
 git clone https://github.com/pljeske/notesbase
 cd notesbase
-cp .env.example .env   # set JWT_SECRET, database and MinIO credentials
+cp .env.example .env
 docker compose up
 ----
 
-Open http://localhost:3000, register the first account (automatically becomes admin), and start writing.
+Open http://localhost:3000 and register.
+First account becomes admin.
 
 == Stack
 
-* *Backend* — Go (Gin, pgx, golang-migrate)
-* *Frontend* — React, TypeScript, Vite, TipTap, Zustand
-* *Database* — PostgreSQL
-* *Storage* — S3-compatible (MinIO by default)
-* *Deployment* — Docker Compose or Helm chart for Kubernetes
+* Go (Gin, pgx, golang-migrate)
+* React + TypeScript + Vite + TipTap + Zustand
+* PostgreSQL
+* MinIO (S3-compatible)
+* Docker Compose / Helm
 
 == Roadmap
 
-=== Navigation & Organization
-- Breadcrumbs on page header
+- Breadcrumbs
 - Favorites / pinned pages
-
-=== Search
-- Advanced search filters (`tag:`, `before:`, `after:`)
-
-=== Users & Security
-- Backup and restore from backup
-
-=== Customization
+- Backup & restore
 - Dark mode
-
-=== Integrations
-- MCP server for asking knowledgebase questions
+- MCP server for querying notes
