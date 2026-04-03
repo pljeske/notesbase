@@ -32,22 +32,22 @@
   "packageRules": [
     {
       "description": "TipTap extensions are tightly coupled — always update together",
-      "matchPackagePatterns": [
-        "^@tiptap/"
-      ],
       "groupName": "TipTap",
-      "automerge": false
+      "automerge": false,
+      "matchPackageNames": [
+        "/^@tiptap//"
+      ]
     },
     {
       "description": "dnd-kit packages move together",
-      "matchPackagePatterns": [
-        "^@dnd-kit/"
-      ],
       "groupName": "dnd-kit",
       "automerge": true,
       "matchUpdateTypes": [
         "minor",
         "patch"
+      ],
+      "matchPackageNames": [
+        "/^@dnd-kit//"
       ]
     },
     {
@@ -81,9 +81,9 @@
         "patch"
       ],
       "automerge": true,
-      "excludePackagePatterns": [
-        "^@tiptap/",
-        "^@dnd-kit/"
+      "matchPackageNames": [
+        "!/^@tiptap//",
+        "!/^@dnd-kit//"
       ]
     },
     {
@@ -96,9 +96,9 @@
       ],
       "groupName": "npm minor updates",
       "automerge": false,
-      "excludePackagePatterns": [
-        "^@tiptap/",
-        "^@dnd-kit/"
+      "matchPackageNames": [
+        "!/^@tiptap//",
+        "!/^@dnd-kit//"
       ]
     },
     {
