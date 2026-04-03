@@ -1,0 +1,154 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "enabledManagers": [
+    "gomod",
+    "npm",
+    "dockerfile",
+    "github-actions",
+    "helmv3"
+  ],
+  "schedule": [
+    "before 6am on Monday"
+  ],
+  "prConcurrentLimit": 5,
+  "prCreation": "not-pending",
+  "semanticCommits": "enabled",
+  "semanticCommitType": "chore",
+  "semanticCommitScope": "deps",
+  "labels": [
+    "dependencies"
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "schedule": [
+      "at any time"
+    ]
+  },
+  "packageRules": [
+    {
+      "description": "TipTap extensions are tightly coupled — always update together",
+      "matchPackagePatterns": [
+        "^@tiptap/"
+      ],
+      "groupName": "TipTap",
+      "automerge": false
+    },
+    {
+      "description": "dnd-kit packages move together",
+      "matchPackagePatterns": [
+        "^@dnd-kit/"
+      ],
+      "groupName": "dnd-kit",
+      "automerge": true,
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ]
+    },
+    {
+      "description": "Group Go minor and patch updates into a single PR",
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "groupName": "Go dependencies (minor + patch)",
+      "automerge": true
+    },
+    {
+      "description": "Go major updates are separate PRs, no auto-merge",
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "automerge": false
+    },
+    {
+      "description": "npm patch updates auto-merge after CI",
+      "matchManagers": [
+        "npm"
+      ],
+      "matchUpdateTypes": [
+        "patch"
+      ],
+      "automerge": true,
+      "excludePackagePatterns": [
+        "^@tiptap/",
+        "^@dnd-kit/"
+      ]
+    },
+    {
+      "description": "npm minor updates: group into one PR, manual merge",
+      "matchManagers": [
+        "npm"
+      ],
+      "matchUpdateTypes": [
+        "minor"
+      ],
+      "groupName": "npm minor updates",
+      "automerge": false,
+      "excludePackagePatterns": [
+        "^@tiptap/",
+        "^@dnd-kit/"
+      ]
+    },
+    {
+      "description": "GitHub Actions — digest pins auto-merge, version bumps manual",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchUpdateTypes": [
+        "digest"
+      ],
+      "groupName": "GitHub Actions (digest)",
+      "automerge": true
+    },
+    {
+      "description": "GitHub Actions version bumps grouped, manual review",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "groupName": "GitHub Actions",
+      "automerge": false
+    },
+    {
+      "description": "Docker base images grouped, manual review",
+      "matchManagers": [
+        "dockerfile"
+      ],
+      "groupName": "Docker base images",
+      "automerge": false
+    },
+    {
+      "description": "Helm subchart dependencies grouped, manual review",
+      "matchManagers": [
+        "helmv3"
+      ],
+      "groupName": "Helm chart dependencies",
+      "automerge": false
+    },
+    {
+      "description": "Major updates across all managers: never auto-merge, tag as breaking",
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "automerge": false,
+      "addLabels": [
+        "breaking-change"
+      ]
+    }
+  ]
+}
