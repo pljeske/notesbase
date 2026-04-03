@@ -99,3 +99,4 @@ Encrypted pages are read-only via the API (the server never holds the key).
 - Backup & restore
 - Dark mode
 - MCP server for querying notes
+- renovate pipeline

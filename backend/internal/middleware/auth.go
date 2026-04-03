@@ -29,7 +29,7 @@ func Auth(authSvc *service.AuthService) gin.HandlerFunc {
 			return
 		}
 
-		userID, role, err := authSvc.ValidateToken(parts[1])
+		userID, role, err := authSvc.ValidateToken(c.Request.Context(), parts[1])
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired token"})
 			return

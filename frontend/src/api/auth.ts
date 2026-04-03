@@ -64,4 +64,11 @@ export const authApi = {
       method: 'POST',
       body: JSON.stringify({token, password}),
     }),
+
+  logout: (refreshToken: string) =>
+    request<void>('/api/auth/logout', {
+      method: 'POST',
+      body: JSON.stringify({refresh_token: refreshToken}),
+      skipRefresh: true,
+    }),
 };

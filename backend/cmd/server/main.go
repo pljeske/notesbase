@@ -88,8 +88,11 @@ func main() {
 	// Ensure at least one admin exists (promotes oldest user after migration).
 	ensureAdminExists(ctx, userRepo)
 
+	revokedRepo := repository.NewPostgresRevokedTokenRepository(pool)
+	revokedRepo.StartCleanup(ctx)
+
 	emailSvc := service.NewEmailService(cfg.SMTPHost, cfg.SMTPPort, cfg.SMTPUsername, cfg.SMTPPassword, cfg.SMTPFrom)
-	authSvc := service.NewAuthService(userRepo, resetRepo, emailSvc, cfg.AppURL, cfg.JWTSecret, cfg.JWTAccessExpiry, cfg.JWTRefreshExpiry)
+	authSvc := service.NewAuthService(userRepo, resetRepo, revokedRepo, emailSvc, cfg.AppURL, cfg.JWTSecret, cfg.JWTAccessExpiry, cfg.JWTRefreshExpiry)
 	authHandler := handler.NewAuthHandler(authSvc, settingsRepo)
 	adminHandler := handler.NewAdminHandler(userRepo, settingsRepo)
 	authMiddleware := middleware.Auth(authSvc)
@@ -116,6 +119,7 @@ func main() {
 	router.POST("/api/auth/register", authLimiter, authHandler.Register)
 	router.POST("/api/auth/login", authLimiter, authHandler.Login)
 	router.POST("/api/auth/refresh", authHandler.Refresh)
+	router.POST("/api/auth/logout", authHandler.Logout)
 	router.POST("/api/auth/forgot-password", resetLimiter, authHandler.ForgotPassword)
 	router.POST("/api/auth/reset-password", resetLimiter, authHandler.ResetPassword)
 

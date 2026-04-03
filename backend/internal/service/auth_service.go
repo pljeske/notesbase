@@ -16,9 +16,17 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type tokenPair struct {
+	accessJTI  string
+	refreshJTI string
+	accessExp  time.Time
+	refreshExp time.Time
+}
+
 type AuthService struct {
 	repo          repository.UserRepository
 	resetRepo     repository.PasswordResetRepository
+	revokedRepo   repository.RevokedTokenRepository
 	emailSvc      *EmailService
 	appURL        string
 	jwtSecret     []byte
@@ -29,6 +37,7 @@ type AuthService struct {
 func NewAuthService(
 	repo repository.UserRepository,
 	resetRepo repository.PasswordResetRepository,
+	revokedRepo repository.RevokedTokenRepository,
 	emailSvc *EmailService,
 	appURL string,
 	secret string,
@@ -37,6 +46,7 @@ func NewAuthService(
 	return &AuthService{
 		repo:          repo,
 		resetRepo:     resetRepo,
+		revokedRepo:   revokedRepo,
 		emailSvc:      emailSvc,
 		appURL:        appURL,
 		jwtSecret:     []byte(secret),
@@ -140,12 +150,15 @@ func (s *AuthService) Login(ctx context.Context, req model.LoginRequest) (*model
 }
 
 func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*model.AuthResponse, error) {
-	userID, tokenType, _, err := s.parseToken(refreshToken)
+	userID, tokenType, _, jti, err := s.parseToken(refreshToken)
 	if err != nil {
 		return nil, fmt.Errorf("invalid refresh token: %w", err)
 	}
 	if tokenType != "refresh" {
 		return nil, fmt.Errorf("invalid token type")
+	}
+	if revoked, err := s.revokedRepo.IsRevoked(ctx, jti); err != nil || revoked {
+		return nil, fmt.Errorf("invalid refresh token")
 	}
 
 	user, err := s.repo.GetByID(ctx, userID)
@@ -177,15 +190,30 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*m
 	}, nil
 }
 
-func (s *AuthService) ValidateToken(tokenStr string) (uuid.UUID, string, error) {
-	userID, tokenType, role, err := s.parseToken(tokenStr)
+func (s *AuthService) ValidateToken(ctx context.Context, tokenStr string) (uuid.UUID, string, error) {
+	userID, tokenType, role, jti, err := s.parseToken(tokenStr)
 	if err != nil {
 		return uuid.Nil, "", err
 	}
 	if tokenType != "access" {
 		return uuid.Nil, "", fmt.Errorf("invalid token type")
 	}
+	if revoked, err := s.revokedRepo.IsRevoked(ctx, jti); err != nil || revoked {
+		return uuid.Nil, "", fmt.Errorf("token has been revoked")
+	}
 	return userID, role, nil
+}
+
+// Logout revokes the access and refresh tokens so they cannot be used again.
+func (s *AuthService) Logout(ctx context.Context, accessToken, refreshToken string) {
+	now := time.Now()
+
+	if _, _, _, jti, err := s.parseToken(accessToken); err == nil {
+		_ = s.revokedRepo.Revoke(ctx, jti, now.Add(s.accessExpiry))
+	}
+	if _, _, _, jti, err := s.parseToken(refreshToken); err == nil {
+		_ = s.revokedRepo.Revoke(ctx, jti, now.Add(s.refreshExpiry))
+	}
 }
 
 // RequestPasswordReset generates a reset token and emails it.
@@ -254,6 +282,7 @@ func (s *AuthService) generateTokenPair(userID uuid.UUID, role string) (string, 
 		"sub":  userID.String(),
 		"type": "access",
 		"role": role,
+		"jti":  uuid.New().String(),
 		"iat":  now.Unix(),
 		"exp":  now.Add(s.accessExpiry).Unix(),
 	}
@@ -266,6 +295,7 @@ func (s *AuthService) generateTokenPair(userID uuid.UUID, role string) (string, 
 	refreshClaims := jwt.MapClaims{
 		"sub":  userID.String(),
 		"type": "refresh",
+		"jti":  uuid.New().String(),
 		"iat":  now.Unix(),
 		"exp":  now.Add(s.refreshExpiry).Unix(),
 	}
@@ -278,7 +308,7 @@ func (s *AuthService) generateTokenPair(userID uuid.UUID, role string) (string, 
 	return accessStr, refreshStr, nil
 }
 
-func (s *AuthService) parseToken(tokenStr string) (uuid.UUID, string, string, error) {
+func (s *AuthService) parseToken(tokenStr string) (uuid.UUID, string, string, string, error) {
 	token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
@@ -286,25 +316,26 @@ func (s *AuthService) parseToken(tokenStr string) (uuid.UUID, string, string, er
 		return s.jwtSecret, nil
 	})
 	if err != nil {
-		return uuid.Nil, "", "", err
+		return uuid.Nil, "", "", "", err
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok || !token.Valid {
-		return uuid.Nil, "", "", fmt.Errorf("invalid token claims")
+		return uuid.Nil, "", "", "", fmt.Errorf("invalid token claims")
 	}
 
 	sub, ok := claims["sub"].(string)
 	if !ok {
-		return uuid.Nil, "", "", fmt.Errorf("missing sub claim")
+		return uuid.Nil, "", "", "", fmt.Errorf("missing sub claim")
 	}
 	userID, err := uuid.Parse(sub)
 	if err != nil {
-		return uuid.Nil, "", "", fmt.Errorf("invalid user id in token")
+		return uuid.Nil, "", "", "", fmt.Errorf("invalid user id in token")
 	}
 
 	tokenType, _ := claims["type"].(string)
 	role, _ := claims["role"].(string)
+	jti, _ := claims["jti"].(string)
 
-	return userID, tokenType, role, nil
+	return userID, tokenType, role, jti, nil
 }

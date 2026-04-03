@@ -122,3 +122,24 @@ func (h *AuthHandler) ResetPassword(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Password updated successfully."})
 }
+
+type logoutRequest struct {
+	RefreshToken string `json:"refresh_token" binding:"required"`
+}
+
+func (h *AuthHandler) Logout(c *gin.Context) {
+	// Extract the access token from the Authorization header.
+	accessToken := ""
+	if header := c.GetHeader("Authorization"); len(header) > 7 {
+		accessToken = header[7:] // strip "Bearer "
+	}
+
+	var req logoutRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	h.service.Logout(c.Request.Context(), accessToken, req.RefreshToken)
+	c.Status(http.StatusNoContent)
+}

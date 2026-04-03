@@ -94,6 +94,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   logout: () => {
+    // Revoke tokens server-side (fire-and-forget — UI clears immediately).
+    const {refreshToken} = get();
+    if (refreshToken) {
+      void authApi.logout(refreshToken).catch(() => {/* best-effort */
+      });
+    }
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
