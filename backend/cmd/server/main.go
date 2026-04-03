@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"notesbase/backend/internal/config"
 	"notesbase/backend/internal/database"
@@ -18,6 +19,7 @@ import (
 	"notesbase/backend/internal/storage"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/time/rate"
 )
 
 func main() {
@@ -105,12 +107,17 @@ func main() {
 	router.GET("/readyz", healthHandler.Readyz)
 
 	// Auth routes (public)
+	// Tight limits on credential and account-recovery endpoints to resist brute force.
+	// login/register: 10 attempts/min burst 5; password reset: 5 attempts/min burst 3.
+	authLimiter := middleware.RateLimit(rate.Every(6*time.Second), 5)   // ~10/min
+	resetLimiter := middleware.RateLimit(rate.Every(12*time.Second), 3) // ~5/min
+
 	router.GET("/api/config", authHandler.GetConfig)
-	router.POST("/api/auth/register", authHandler.Register)
-	router.POST("/api/auth/login", authHandler.Login)
+	router.POST("/api/auth/register", authLimiter, authHandler.Register)
+	router.POST("/api/auth/login", authLimiter, authHandler.Login)
 	router.POST("/api/auth/refresh", authHandler.Refresh)
-	router.POST("/api/auth/forgot-password", authHandler.ForgotPassword)
-	router.POST("/api/auth/reset-password", authHandler.ResetPassword)
+	router.POST("/api/auth/forgot-password", resetLimiter, authHandler.ForgotPassword)
+	router.POST("/api/auth/reset-password", resetLimiter, authHandler.ResetPassword)
 
 	// Protected API routes
 	api := router.Group("/api")
