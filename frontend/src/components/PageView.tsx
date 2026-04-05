@@ -6,6 +6,7 @@ import {useAutoSave} from '../hooks/useAutoSave';
 import {Editor} from './editor/Editor';
 import {TagPicker} from './editor/TagPicker';
 import {ExportDialog} from './ExportDialog';
+import {Breadcrumbs} from './Breadcrumbs';
 import {DownloadSimpleIcon, LockSimpleIcon, LockSimpleOpenIcon} from '@phosphor-icons/react';
 import type {JSONContent, SearchResult} from '../types/page';
 import {pagesApi} from '../api/pages';
@@ -385,6 +386,9 @@ export function PageView() {
   // ── Normal view (unlocked) ────────────────────────────────────
   return (
     <div className="flex flex-col h-full">
+      {/* Breadcrumbs */}
+      <Breadcrumbs pageId={pageId!}/>
+
       {/* Toolbar row */}
       <div className="px-8 pt-4 pb-2 flex items-center justify-between gap-3">
         <TagPicker pageId={pageId!} selectedTags={activePage?.tags ?? []}/>
