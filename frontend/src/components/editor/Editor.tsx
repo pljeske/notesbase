@@ -215,6 +215,7 @@ export function Editor({content, onUpdate, pageTitle, onTitleChange, pageId, pag
       <input
         ref={titleInputRef}
         className="text-4xl font-bold w-full outline-none border-none bg-transparent mb-4 text-gray-900 placeholder-gray-300"
+        style={{letterSpacing: '-0.02em'}}
         value={pageTitle}
         onChange={(e) => onTitleChange(e.target.value)}
         onFocus={(e) => e.target.select()}

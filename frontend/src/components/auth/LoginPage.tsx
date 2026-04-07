@@ -28,10 +28,14 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center" style={{background: '#f8f6f1'}}>
       <div className="w-full max-w-sm">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">Welcome back</h1>
+        <div className="flex items-center justify-center gap-2 mb-6">
+          <img src="/favicon/favicon.svg" alt="" className="w-6 h-6"/>
+          <span className="nb-brand" style={{color: '#1a1d18'}}>notesbase</span>
+        </div>
+        <div className="bg-white rounded-2xl p-8 border" style={{borderColor: 'rgba(0,0,0,0.06)'}}>
+          <h1 className="nb-serif-heading text-3xl mb-2">Welcome back</h1>
           <p className="text-sm text-gray-500 mb-6">Sign in to your account</p>
 
           {successMessage && (
@@ -58,7 +62,7 @@ export function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoFocus
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-gray-400 transition-colors"
                 placeholder="you@example.com"
               />
             </div>
@@ -78,7 +82,7 @@ export function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-gray-400 transition-colors"
                 placeholder="Enter your password"
               />
             </div>
@@ -86,7 +90,7 @@ export function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-2 px-4 bg-gray-900 text-white text-sm font-medium rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-2.5 px-4 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? 'Signing in...' : 'Sign in'}
             </button>

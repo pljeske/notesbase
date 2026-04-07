@@ -460,3 +460,11 @@ body {
   letter-spacing: -0.01em;
   line-height: 1;
 }
+
+.nb-serif-heading {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-style: italic;
+  letter-spacing: -0.025em;
+  color: #1a1d18;
+  line-height: 1.1;
+}

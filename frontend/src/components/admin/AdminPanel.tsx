@@ -1,5 +1,5 @@
 import {useEffect, useState} from 'react';
-import {adminApi, type AdminUser, type AdminSettings} from '../../api/admin';
+import {adminApi, type AdminSettings, type AdminUser} from '../../api/admin';
 import {useAuthStore} from '../../stores/authStore';
 
 export function AdminPanel() {
@@ -116,7 +116,7 @@ export function AdminPanel() {
             <button
               onClick={handleToggleRegistration}
               className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${
-                settings?.registration_enabled ? 'bg-blue-500' : 'bg-gray-200'
+                settings?.registration_enabled ? 'bg-[#6ba07a]' : 'bg-gray-200'
               }`}
             >
               <span

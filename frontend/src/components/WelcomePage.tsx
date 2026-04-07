@@ -20,14 +20,14 @@ export function WelcomePage() {
 
   return (
     <div className="flex flex-col items-center justify-center h-full text-center px-4">
-      <h2 className="text-2xl font-bold text-gray-800 mb-2">Welcome to notesbase</h2>
-      <p className="text-gray-500 mb-6 max-w-md">
-        Create pages and organize them in a tree structure.
-        Use slash commands like /h1, /bullet, /quote to format your content.
+      <h2 className="nb-serif-heading text-4xl mb-3">Welcome to notesbase</h2>
+      <p className="text-gray-400 mb-8 max-w-sm text-sm leading-relaxed">
+        Your personal space for notes and ideas.
+        Create your first page to get started.
       </p>
       <button
         onClick={handleCreate}
-        className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm hover:bg-gray-800 transition-colors"
+        className="px-5 py-2.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 active:scale-[0.98] transition-all"
       >
         Create a page
       </button>

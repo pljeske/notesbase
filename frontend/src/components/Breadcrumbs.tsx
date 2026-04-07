@@ -32,7 +32,7 @@ export function Breadcrumbs({pageId}: { pageId: string }) {
     <nav className="flex items-center gap-1 px-8 pt-3 text-xs" style={{color: '#9ca3af'}}>
       {ancestors.map((item, i) => (
         <span key={item.id} className="flex items-center gap-1 min-w-0">
-          {i > 0 && <span className="mx-0.5">/</span>}
+          {i > 0 && <span className="mx-0.5 opacity-40">›</span>}
           <Link
             to={`/page/${item.id}`}
             className="flex items-center gap-1 min-w-0 hover:text-gray-600 transition-colors"
