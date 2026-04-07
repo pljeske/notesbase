@@ -1,0 +1,412 @@
+= Notesbase User Guide
+:toclevels: 3
+:sectnums:
+:experimental:
+
+A self-hosted notes application with rich text editing, hierarchical pages, tags, encryption, and file uploads.
+
+== Getting Started
+
+=== Creating an Account
+
+Navigate to the Notesbase URL and click *Sign up* on the login page.
+The first user to register automatically becomes an administrator.
+Subsequent registrations create regular user accounts.
+
+[NOTE]
+Registration may be disabled by your administrator.
+Contact them if you cannot access the sign-up page.
+
+=== Logging In
+
+Enter your email and password on the login page and click *Sign in*.
+If you have forgotten your password, click *Forgot password?* to receive a reset link by email.
+
+=== The Interface
+
+After logging in you will see two main areas:
+
+* *Sidebar* (left) — page tree, search, tags, and trash
+* *Editor* (right) — the content area for the selected page
+
+The header bar across the top contains breadcrumb navigation, save status, page actions, and account controls.
+
+== Pages
+
+=== Creating Pages
+
+Use the *+* button at the top of the sidebar to create a new root-level page.
+To create a subpage nested under an existing page, open that page's context menu (*⋯*) and choose *Add subpage*.
+
+=== Page Tree
+
+All pages are displayed as a collapsible hierarchy in the sidebar.
+Click the chevron icon (►) next to a page to expand or collapse its children.
+The currently active page is highlighted.
+
+Pages with encryption enabled display a lock icon (🔒) next to their title.
+
+=== Reordering Pages
+
+Click and hold the drag handle (*⠿*, the six-dot icon) to the left of a page title, then drag it to a new position.
+Reordering is supported within the same parent level.
+
+=== Context Menu
+
+Hover over any page in the sidebar and click *⋯* to open its context menu.
+Available actions:
+
+[cols="1,3"]
+|===
+| Action | Description
+
+| Add subpage
+| Creates a new child page nested under this one.
+
+| Duplicate
+| Creates a copy of the page (not nested under the original).
+
+| Move to Trash
+| Soft-deletes the page; it can be restored from the Trash section.
+|===
+
+=== Page Icons
+
+Click the icon area to the left of the page title in the editor to open the icon picker.
+Choose an emoji or icon and optionally select a color.
+The icon appears in the sidebar, breadcrumbs, and search results.
+To remove an icon, open the picker and select the clear option.
+
+=== Breadcrumbs
+
+The breadcrumb bar at the top of the editor shows the full path from the root to the current page.
+Click any ancestor in the breadcrumb to navigate to it.
+
+== Editing Content
+
+=== The Editor
+
+Click into the content area below the page title to begin writing.
+The editor auto-saves your changes with a short delay after you stop typing.
+The current save state is shown in the header:
+
+* *Saving…* — a save is in progress
+* *Saved* — the last save was successful
+* *Save failed* — an error occurred; check your connection
+
+=== Slash Commands
+
+Type `/` anywhere in the editor to open the block insertion menu.
+Type to filter the list, then click or press kbd:[Enter] to insert a block.
+
+.Available block types
+[cols="1,3"]
+|===
+| Block | Description
+
+| Heading 1 / 2 / 3
+| Section headings at three levels.
+
+| Bullet list
+| Unordered list items.
+
+| Numbered list
+| Ordered (numbered) list items.
+
+| Blockquote
+| Indented quotation block.
+
+| Code block
+| Syntax-highlighted code (see <<_code_blocks>>).
+
+| Table
+| 3×3 table (see <<_tables>>).
+
+| Divider
+| Horizontal rule separating content sections.
+
+| Image
+| Upload an image from your device (see <<_images>>).
+
+| PDF
+| Upload a PDF for inline preview (see <<_pdfs>>).
+
+| File
+| Upload any file as a downloadable attachment (see <<_files>>).
+
+| Info / Warning / Tip callout
+| Highlighted callout block for notices and tips.
+
+| Page mention
+| Inline link to another page (see <<_page_mentions>>).
+|===
+
+=== Text Formatting
+
+Select any text to reveal the formatting toolbar.
+Available options:
+
+[cols="1,3"]
+|===
+| Format | Shortcut
+
+| Bold
+| kbd:[Ctrl+B] / kbd:[⌘+B]
+
+| Italic
+| kbd:[Ctrl+I] / kbd:[⌘+I]
+
+| Underline
+| kbd:[Ctrl+U] / kbd:[⌘+U]
+
+| Strikethrough
+| —
+
+| Inline code
+| —
+
+| Link
+| Paste a URL or click the link icon to enter one
+|===
+
+=== Code Blocks
+
+Insert a code block via `/code`.
+Click the language label at the top-right of the block to select from 24+ supported languages including Python, JavaScript, TypeScript, Go, Rust, Java, C++, SQL, and more.
+Syntax highlighting is applied automatically.
+
+=== Tables
+
+Insert a table via `/table`.
+A 3×3 grid is created by default.
+Right-click a cell or use the table toolbar to:
+
+* Add or remove rows and columns
+* Delete the table
+
+=== Images
+
+Images can be added in three ways:
+
+* Type `/image` and upload a file from your device
+* Drag an image file from your file manager and drop it into the editor
+* Paste an image from your clipboard (kbd:[Ctrl+V] / kbd:[⌘+V])
+
+After inserting an image, drag the resize handles on its edges to adjust its dimensions.
+
+=== PDFs
+
+Type `/pdf` to upload a PDF file.
+The PDF renders as an inline preview that can be expanded or collapsed.
+Click *Open in new tab* to view the full document in your browser.
+
+=== Files
+
+Type `/file` to upload any file type as a downloadable attachment.
+A download link is inserted into the page.
+
+== Page Mentions and Backlinks
+
+=== Page Mentions
+
+Type `+[[+` anywhere in the editor to open the page mention autocomplete.
+Start typing the page title to filter results, then click or press kbd:[Enter] to insert the link.
+The mention appears as an inline chip with the page title.
+
+Mentioning a page automatically creates a backlink in the target page.
+
+=== Backlinks
+
+The *Backlinks* panel at the bottom of the editor lists all pages that contain a mention of the current page.
+Click any backlink entry to navigate to that page.
+
+== Tags
+
+=== Adding Tags to a Page
+
+Click the tag icon in the page toolbar (top-right area) to open the tag picker.
+Check the boxes next to tags you want to assign.
+Tags are shown as coloured badges below the page title.
+
+=== Creating Tags
+
+In the tag picker, type a new tag name in the search field and click *Create tag*.
+A color is assigned automatically; you can change it later.
+
+=== Managing Tags
+
+Click *Manage* in the sidebar Tags section to open the tag management modal.
+From here you can:
+
+* Rename a tag
+* Change its color (choose from 16+ predefined colors)
+* Delete a tag
+
+[WARNING]
+Deleting a tag removes it from all pages it is assigned to.
+
+=== Browsing by Tag
+
+Click any tag in the sidebar Tags section to see all pages assigned to that tag.
+Each page shows its title, icon, and last-updated date.
+
+== Search
+
+Click the search bar at the top of the sidebar or press kbd:[/] to focus it.
+Results appear as you type (with a short debounce delay).
+
+Use kbd:[↑] and kbd:[↓] to navigate results, kbd:[Enter] to open the selected page, and kbd:[Escape] to close.
+
+[NOTE]
+Encrypted pages are excluded from search results.
+
+== Encryption
+
+=== Encrypting a Page
+
+Click the lock icon in the page toolbar to toggle encryption.
+Once enabled, the page content is encrypted using your account password.
+A badge reading *Encrypted · not searchable* appears in the toolbar.
+
+=== Unlocking Encrypted Pages
+
+If your session has expired, click the lock icon in the main header to re-enter your account password and unlock all encrypted pages for the current session.
+
+=== Removing Encryption
+
+Click the lock icon in the page toolbar and confirm when prompted.
+The page content will be decrypted and stored as plain text.
+
+[CAUTION]
+Encrypted pages are not indexed for search.
+Use encryption only for content that requires it.
+
+== Trash
+
+=== Moving Pages to Trash
+
+Open a page's context menu in the sidebar and choose *Move to Trash*.
+The page is soft-deleted and no longer appears in the main tree.
+
+=== Restoring Pages
+
+Expand the *Trash* section at the bottom of the sidebar.
+Click *Restore* next to a page to move it back to the root of the page tree.
+
+=== Permanently Deleting Pages
+
+Click the delete icon next to a trashed page and confirm the second click.
+Permanent deletion cannot be undone.
+
+== Export
+
+=== Exporting a Single Page
+
+Click the export icon in the page toolbar to open the export dialog.
+Choose a format and download the file.
+
+=== Exporting All Pages
+
+Click the export icon at the top of the sidebar to export your entire workspace.
+A zip file is not produced; each page is exported as a separate download.
+
+=== Export Formats
+
+[cols="1,3"]
+|===
+| Format | Description
+
+| Markdown (`.md`)
+| Plain-text Markdown with title, tags, and content.
+
+| HTML (`.html`)
+| Styled HTML representation of the page.
+
+| JSON (`.json`)
+| Structured data including all page properties.
+|===
+
+== API Keys
+
+Navigate to *Settings* → *API Keys* to manage programmatic access.
+
+=== Creating a Key
+
+. Click *Create API key*.
+. Enter a descriptive name.
+. Select the scopes (permissions) the key should have.
+. Click *Create*.
+
+[IMPORTANT]
+Copy the secret key immediately after creation — it is shown only once.
+
+=== Using a Key
+
+Include the key in the `Authorization` header of API requests:
+
+[source,http]
+----
+Authorization: Bearer nbp_<your-key>
+----
+
+=== Deleting a Key
+
+Click the delete icon next to a key and confirm to revoke it immediately.
+
+== Admin Panel
+
+The Admin Panel is accessible from the header for administrator accounts only.
+
+=== User Management
+
+The *Users* table lists all registered accounts with their name, email, role, and status.
+
+[cols="1,3"]
+|===
+| Action | Description
+
+| Change role
+| Use the dropdown to promote a user to *admin* or demote to *user*. You cannot change your own role.
+
+| Disable / Enable
+| Prevent a user from logging in without deleting their account.
+|===
+
+=== Registration Settings
+
+Toggle *Allow new user registration* to control whether the sign-up page is accessible.
+When disabled, new users cannot create accounts.
+
+== Keyboard Shortcuts
+
+[cols="2,3"]
+|===
+| Shortcut | Action
+
+| kbd:[/]
+| Open slash command menu in the editor
+
+| kbd:[+\[\[+]
+| Open page mention autocomplete
+
+| kbd:[Ctrl+B] / kbd:[⌘+B]
+| Bold
+
+| kbd:[Ctrl+I] / kbd:[⌘+I]
+| Italic
+
+| kbd:[Ctrl+U] / kbd:[⌘+U]
+| Underline
+
+| kbd:[Ctrl+V] / kbd:[⌘+V]
+| Paste (images paste directly into the editor)
+
+| kbd:[↑] / kbd:[↓]
+| Navigate search or slash command results
+
+| kbd:[Enter]
+| Confirm selected search result or slash command
+
+| kbd:[Escape]
+| Close search, slash command menu, or modals
+|===

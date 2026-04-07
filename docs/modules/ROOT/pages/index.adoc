@@ -1,0 +1,8 @@
+= Notesbase Documentation
+
+Welcome to the Notesbase documentation.
+
+== Guides
+
+xref:user-guide.adoc[User Guide]::
+Learn how to use Notesbase: creating pages, using the rich text editor, organizing with tags, encrypting content, searching, and exporting your data.
