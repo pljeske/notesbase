@@ -79,6 +79,9 @@ HTTP Request → Handler → Service → Repository → PostgreSQL
 
 Repositories use interfaces; services receive dependencies via constructor injection.
 
+Migrations run **automatically** on server startup (`database.RunMigrations` called from `main.go`) — no separate
+migrate step needed. Go version required: **1.25.6** (see `backend/go.mod`).
+
 ### Frontend: React + Zustand
 
 - **`frontend/src/App.tsx`** — Router with `AuthGuard`, `GuestGuard`, `AdminGuard`
@@ -99,13 +102,17 @@ Repositories use interfaces; services receive dependencies via constructor injec
 
 ### Environment Variables
 
-See `.env.example` for all variables. Key ones:
+Copy `.env.example` to `.env` before first run: `cp .env.example .env`
+
+Key variables:
 
 - `DATABASE_URL` — PostgreSQL connection string
 - `JWT_SECRET` — Must be changed in production
 - `MINIO_ENDPOINT` / `MINIO_ACCESS_KEY` / `MINIO_SECRET_KEY` — File storage
 - `CORS_ALLOWED_ORIGINS` — Comma-separated allowed origins
 - `DISABLE_REGISTRATION` — Set to `true` to prevent new signups
+- `SMTP_HOST` — SMTP server for password-reset emails; leave empty to log emails to stdout (useful in dev)
+- `APP_URL` — Public frontend URL used in reset email links (e.g. `http://localhost:5173`)
 
 ## Gotchas
 
