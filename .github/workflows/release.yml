@@ -46,23 +46,6 @@ jobs:
           update-file: helm/notesbase/Chart.yaml
           custom-arguments: "--update frontend/package.json"
 
-      # The updater-helm plugin only touches `version`. Patch `appVersion` on
-      # main so the working tree stays accurate for anyone installing from
-      # source. The published Helm chart gets the correct appVersion via
-      # `helm package --app-version` regardless.
-      - name: Sync Chart.yaml appVersion on main
-        if: steps.release.outputs.version != ''
-        env:
-          VERSION: ${{ steps.release.outputs.version }}
-        run: |
-          pip install --quiet --break-system-packages yq
-          yq -Yi ".appVersion = \"v${VERSION}\"" helm/notesbase/Chart.yaml
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add helm/notesbase/Chart.yaml
-          git diff --cached --quiet || \
-            git commit -m "chore: sync Chart.yaml appVersion to v${VERSION} [skip ci]" && \
-            git push
 
   # ---------------------------------------------------------------------------
   # 1b. Manual release via workflow_dispatch. Creates a tag and GitHub release

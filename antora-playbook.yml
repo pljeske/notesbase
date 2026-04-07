@@ -12,6 +12,7 @@ content:
       # Tags are injected at build time by the CI workflow — only tags that
       # contain docs/antora.yml are included. See .github/workflows/docs.yml.
       start_path: docs
+      version: true
 
 ui:
   bundle:
