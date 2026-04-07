@@ -9,8 +9,8 @@ content:
       # 'HEAD' always includes the currently checked-out branch.
       # Add branch names to include additional branches, e.g. [HEAD, dev].
       branches: [ HEAD, main ]
-      # Include all semver tags (v0.1.0, v1.2.3, …). Remove to skip tags.
-      tags: [ 'v*' ]
+      # Tags are injected at build time by the CI workflow — only tags that
+      # contain docs/antora.yml are included. See .github/workflows/docs.yml.
       start_path: docs
 
 ui:

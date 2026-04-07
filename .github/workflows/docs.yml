@@ -36,6 +36,23 @@ jobs:
       - name: Install Antora
         run: npm install -g @antora/cli @antora/site-generator
 
+      - name: Inject valid tagged versions into playbook
+        run: |
+          # Collect tags that actually contain docs/antora.yml.
+          # Older tags pre-dating the docs directory are silently skipped.
+          mapfile -t VALID_TAGS < <(
+            git tag -l 'v*' | while IFS= read -r tag; do
+              git ls-tree "$tag" -- docs/antora.yml 2>/dev/null | grep -q . && echo "$tag"
+            done
+          )
+          if [ ${#VALID_TAGS[@]} -gt 0 ]; then
+            TAGS_CSV=$(printf '"%s",' "${VALID_TAGS[@]}" | sed 's/,$//')
+            yq -i ".content.sources[0].tags = [$TAGS_CSV]" antora-playbook.yml
+            echo "Tagged versions included: ${VALID_TAGS[*]}"
+          else
+            echo "No tagged versions with docs found; building branches only"
+          fi
+
       - name: Build docs
         run: antora antora-playbook.yml
 
