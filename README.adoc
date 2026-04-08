@@ -2,8 +2,8 @@
 
 Vibe coded self-hosted notes app.
 
-image::docs/screenshots/page-view.jpeg[notesbase overview]
-image::docs/screenshots/page-view-slashmenu.jpeg[Rich text editor with multiple formats]
+image::docs/images/page-view.jpeg[notesbase overview]
+image::docs/images/page-view-slashmenu.jpeg[Rich text editor with multiple formats]
 
 == Why I built this
 

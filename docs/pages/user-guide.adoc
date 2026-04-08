@@ -84,6 +84,8 @@ Click any ancestor in the breadcrumb to navigate to it.
 
 == Editing Content
 
+image::../images/page-view.jpeg[page view]
+
 === The Editor
 
 Click into the content area below the page title to begin writing.
@@ -98,6 +100,8 @@ The current save state is shown in the header:
 
 Type `/` anywhere in the editor to open the block insertion menu.
 Type to filter the list, then click or press kbd:[Enter] to insert a block.
+
+image::../images/page-view-slashmenu.jpeg[Slash menu]
 
 .Available block types
 [cols="1,3"]
