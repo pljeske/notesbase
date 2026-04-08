@@ -12,3 +12,4 @@ helm/notesbase/charts/
 helm/values.yaml
 helm/notesbase/Chart.lock
 .ai
+build

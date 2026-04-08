@@ -6,7 +6,6 @@ on:
       - main
     paths:
       - 'docs/**'
-      - 'antora-playbook.yml'
   workflow_dispatch:
 
 permissions:
@@ -20,63 +19,23 @@ concurrency:
 
 jobs:
   build:
-    name: Build with Antora
+    name: Build with Asciidoctor
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout (full history for all tags and branches)
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@v4
 
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Install Antora
-        run: npm install -g @antora/cli @antora/site-generator
-
-      - name: Inject versioned tag sources into playbook
-        run: |
-          python3 - <<'PYEOF'
-          import subprocess, sys
-
-          try:
-              import yaml
-          except ImportError:
-              subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-q', 'pyyaml'])
-              import yaml
-
-          with open('antora-playbook.yml') as f:
-              pb = yaml.safe_load(f)
-
-          # Find tags that contain docs/antora.yml (skip pre-docs tags).
-          tags = subprocess.check_output(['git', 'tag', '-l', 'v*']).decode().split()
-          valid = sorted(t for t in tags if subprocess.run(
-              ['git', 'ls-tree', t, '--', 'docs/antora.yml'],
-              capture_output=True).stdout.strip())
-
-          print('Valid tags:', valid or '(none)')
-
-          # Add one source entry per tag with an explicit version so Antora
-          # treats each tag as a distinct version of the component.
-          for tag in valid:
-              pb['content']['sources'].append({
-                  'url': '.',
-                  'tags': [tag],
-                  'version': tag.lstrip('v'),
-                  'start_path': 'docs',
-              })
-
-          with open('antora-playbook.yml', 'w') as f:
-              yaml.dump(pb, f, default_flow_style=False)
-          PYEOF
+      - name: Install Asciidoctor
+        run: sudo gem install asciidoctor
 
       - name: Build docs
-        run: antora antora-playbook.yml
+        run: |
+          asciidoctor \
+            --destination-dir build/site \
+            --source-dir docs \
+            '**/*.adoc'
+          cp -r docs/images build/site/images
 
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v3
         with:
           path: build/site
 
@@ -88,9 +47,6 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-
-      - name: Deploy
-        id: deployment
+      - uses: actions/configure-pages@v5
+      - id: deployment
         uses: actions/deploy-pages@v4
