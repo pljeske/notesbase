@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'docs/**'
+      - 'README.adoc'
   workflow_dispatch:
 
 permissions:
@@ -30,10 +31,16 @@ jobs:
       - name: Build docs
         run: |
           asciidoctor \
+            -a toc=left \
+            -a toclevels=3 \
+            -a sectanchors \
+            -a icons=font \
+            -a docinfo=shared \
             --destination-dir build/site \
-            --source-dir docs \
-            '**/*.adoc'
+            docs/index.adoc
+
           cp -r docs/images build/site/images
+          cp docs/assets/docs.css build/site/docs.css
 
       - uses: actions/upload-pages-artifact@v3
         with:

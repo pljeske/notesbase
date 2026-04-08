@@ -1,4 +1,4 @@
-= Notesbase User Guide
+= User Guide
 :toclevels: 3
 :sectnums:
 :experimental:

@@ -1,8 +1,15 @@
-= Notesbase Documentation
+:toc: left
+:toc-title: Overview
+:toclevels: 2
+:sectanchors:
+:icons: font
+// Override imagesdir so the ifndef guard in README.adoc is skipped and images
+// resolve correctly relative to the built site root.
+:imagesdir: images
 
-Welcome to the notesbase documentation.
+= notesbase docs
 
-== Guides
+// README.adoc is copied into docs/ during the CI build step
+include::../README.adoc[leveloffset=+1]
 
-xref:pages/user-guide.adoc[User Guide]::
-Learn how to use Notesbase: creating pages, using the rich text editor, organizing with tags, encrypting content, searching, and exporting your data.
+include::pages/user-guide.adoc[leveloffset=+1]
