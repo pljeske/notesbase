@@ -1,0 +1,15 @@
+:toc: left
+:toc-title: Overview
+:toclevels: 2
+:sectanchors:
+:icons: font
+// Override imagesdir so the ifndef guard in README.adoc is skipped and images
+// resolve correctly relative to the built site root.
+:imagesdir: images
+
+= notesbase docs
+
+// README.adoc is copied into docs/ during the CI build step
+include::../README.adoc[leveloffset=+1]
+
+include::pages/user-guide.adoc[leveloffset=+1]

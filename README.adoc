@@ -1,9 +1,14 @@
 = notesbase
+// When included by another document (e.g. docs/index.adoc), the parent sets
+// :imagesdir: before the include and this guard is skipped.
+ifndef::imagesdir[]
+:imagesdir: docs/images
+endif::[]
 
 Vibe coded self-hosted notes app.
 
-image::docs/screenshots/page-view.jpeg[notesbase overview]
-image::docs/screenshots/page-view-slashmenu.jpeg[Rich text editor with multiple formats]
+image::page-view.jpeg[notesbase overview]
+image::page-view-slashmenu.jpeg[Rich text editor with multiple formats]
 
 == Why I built this
 

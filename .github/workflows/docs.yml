@@ -1,0 +1,59 @@
+name: Publish Docs
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+      - 'README.adoc'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build with Asciidoctor
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Asciidoctor
+        run: sudo gem install asciidoctor
+
+      - name: Build docs
+        run: |
+          asciidoctor \
+            -a toc=left \
+            -a toclevels=3 \
+            -a sectanchors \
+            -a icons=font \
+            -a docinfo=shared \
+            --destination-dir build/site \
+            docs/index.adoc
+
+          cp -r docs/images build/site/images
+          cp docs/assets/docs.css build/site/docs.css
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@v5
+      - id: deployment
+        uses: actions/deploy-pages@v4
