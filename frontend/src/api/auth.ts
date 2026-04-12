@@ -4,6 +4,8 @@ export interface RegisterData {
   email: string;
   password: string;
   name: string;
+  website?: string;    // honeypot — must remain empty
+  form_token?: string; // timing token from GET /api/config
 }
 
 export interface LoginData {
@@ -25,6 +27,7 @@ export interface AuthResponse {
 
 export interface AppConfig {
   registration_enabled: boolean;
+  form_token: string;
 }
 
 export const authApi = {

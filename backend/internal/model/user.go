@@ -19,9 +19,11 @@ type User struct {
 }
 
 type RegisterRequest struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required,min=8"`
-	Name     string `json:"name" binding:"required"`
+	Email     string `json:"email" binding:"required,email"`
+	Password  string `json:"password" binding:"required,min=8"`
+	Name      string `json:"name" binding:"required"`
+	Website   string `json:"website"`    // honeypot — must be empty
+	FormToken string `json:"form_token"` // timing token from GET /api/config
 }
 
 type LoginRequest struct {

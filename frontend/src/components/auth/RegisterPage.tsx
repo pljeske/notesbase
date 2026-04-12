@@ -12,9 +12,16 @@ export function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [validationError, setValidationError] = useState('');
   const [registrationEnabled, setRegistrationEnabled] = useState(true);
+  const [formToken, setFormToken] = useState('');
+  // Honeypot: invisible to humans, filled by bots.
+  const [website, setWebsite] = useState('');
 
   useEffect(() => {
-    authApi.getConfig().then((cfg) => setRegistrationEnabled(cfg.registration_enabled)).catch(() => {});
+    authApi.getConfig().then((cfg) => {
+      setRegistrationEnabled(cfg.registration_enabled);
+      setFormToken(cfg.form_token);
+    }).catch(() => {
+    });
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -33,7 +40,7 @@ export function RegisterPage() {
     }
 
     try {
-      await register({name, email, password});
+      await register({name, email, password, website, form_token: formToken});
       navigate('/');
     } catch {
       // Error is set in the store
@@ -66,6 +73,26 @@ export function RegisterPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Honeypot: hidden from humans via CSS, bots fill it and are rejected */}
+            <div style={{
+              position: 'absolute',
+              left: '-9999px',
+              top: 'auto',
+              width: '1px',
+              height: '1px',
+              overflow: 'hidden'
+            }} aria-hidden="true">
+              <label htmlFor="website">Website</label>
+              <input
+                id="website"
+                type="text"
+                name="website"
+                value={website}
+                onChange={(e) => setWebsite(e.target.value)}
+                tabIndex={-1}
+                autoComplete="off"
+              />
+            </div>
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                 Name

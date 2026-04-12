@@ -93,7 +93,8 @@ func main() {
 
 	emailSvc := service.NewEmailService(cfg.SMTPHost, cfg.SMTPPort, cfg.SMTPUsername, cfg.SMTPPassword, cfg.SMTPFrom)
 	authSvc := service.NewAuthService(userRepo, resetRepo, revokedRepo, emailSvc, cfg.AppURL, cfg.JWTSecret, cfg.JWTAccessExpiry, cfg.JWTRefreshExpiry)
-	authHandler := handler.NewAuthHandler(authSvc, settingsRepo)
+	formToken := middleware.NewFormToken(cfg.JWTSecret)
+	authHandler := handler.NewAuthHandler(authSvc, settingsRepo, formToken)
 	adminHandler := handler.NewAdminHandler(userRepo, settingsRepo)
 	authMiddleware := middleware.Auth(authSvc)
 
@@ -110,14 +111,17 @@ func main() {
 	router.GET("/readyz", healthHandler.Readyz)
 
 	// Auth routes (public)
-	// Tight limits on credential and account-recovery endpoints to resist brute force.
-	// login/register: 10 attempts/min burst 5; password reset: 5 attempts/min burst 3.
-	authLimiter := middleware.RateLimit(rate.Every(6*time.Second), 5)   // ~10/min
-	resetLimiter := middleware.RateLimit(rate.Every(12*time.Second), 3) // ~5/min
+	// Tiered rate limits on credential and account-recovery endpoints.
+	// login:    ~10/min (burst 5)  — users legitimately retry passwords
+	// register: ~3/min  (burst 2)  — account creation needs a tighter ceiling
+	// reset:    ~5/min  (burst 3)  — password-reset flow
+	loginLimiter := middleware.RateLimit(rate.Every(6*time.Second), 5)     // ~10/min
+	registerLimiter := middleware.RateLimit(rate.Every(20*time.Second), 2) // ~3/min
+	resetLimiter := middleware.RateLimit(rate.Every(12*time.Second), 3)    // ~5/min
 
 	router.GET("/api/config", authHandler.GetConfig)
-	router.POST("/api/auth/register", authLimiter, authHandler.Register)
-	router.POST("/api/auth/login", authLimiter, authHandler.Login)
+	router.POST("/api/auth/register", registerLimiter, authHandler.Register)
+	router.POST("/api/auth/login", loginLimiter, authHandler.Login)
 	router.POST("/api/auth/refresh", authHandler.Refresh)
 	router.POST("/api/auth/logout", authHandler.Logout)
 	router.POST("/api/auth/forgot-password", resetLimiter, authHandler.ForgotPassword)

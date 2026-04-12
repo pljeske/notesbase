@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 
+	"notesbase/backend/internal/middleware"
 	"notesbase/backend/internal/model"
 	"notesbase/backend/internal/repository"
 	"notesbase/backend/internal/service"
@@ -13,10 +14,11 @@ import (
 type AuthHandler struct {
 	service      *service.AuthService
 	settingsRepo repository.SettingsRepository
+	formToken    *middleware.FormToken
 }
 
-func NewAuthHandler(s *service.AuthService, settingsRepo repository.SettingsRepository) *AuthHandler {
-	return &AuthHandler{service: s, settingsRepo: settingsRepo}
+func NewAuthHandler(s *service.AuthService, settingsRepo repository.SettingsRepository, ft *middleware.FormToken) *AuthHandler {
+	return &AuthHandler{service: s, settingsRepo: settingsRepo, formToken: ft}
 }
 
 func (h *AuthHandler) registrationEnabled(c *gin.Context) bool {
@@ -28,7 +30,10 @@ func (h *AuthHandler) registrationEnabled(c *gin.Context) bool {
 }
 
 func (h *AuthHandler) GetConfig(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"registration_enabled": h.registrationEnabled(c)})
+	c.JSON(http.StatusOK, gin.H{
+		"registration_enabled": h.registrationEnabled(c),
+		"form_token":           h.formToken.Generate(),
+	})
 }
 
 func (h *AuthHandler) Register(c *gin.Context) {
@@ -40,6 +45,19 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	var req model.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Honeypot: bots fill this invisible field; humans never see it.
+	if req.Website != "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	// Timing token: proves the form was loaded before submission and wasn't
+	// submitted instantly (catches scripted requests without a browser).
+	if err := h.formToken.Validate(req.FormToken); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
 		return
 	}
 
